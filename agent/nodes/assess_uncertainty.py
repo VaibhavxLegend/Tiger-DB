@@ -116,72 +116,83 @@ IMPORTANT:
 - Be conservative: if confidence < 0.6, set sufficient_evidence to false
 - Pattern "undocumented" requires pattern_description explaining what you found"""
 
-    # Call LLM
-    print("  - Calling LLM for assessment...")
-    try:
-        client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-        
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=2000,
-            temperature=0.3,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        
-        # Parse response
-        response_text = response.content[0].text
-        
-        # Extract JSON (handle markdown code blocks)
-        if "```json" in response_text:
-            response_text = response_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in response_text:
-            response_text = response_text.split("```")[1].split("```")[0].strip()
-        
-        assessment_data = json.loads(response_text)
-        
-        # Validate with pydantic
-        assessment = AssessmentOutput(**assessment_data)
-        
-        # Update state
-        state.fraud_probability = assessment.fraud_probability
-        state.confidence = assessment.confidence
-        state.pattern = assessment.pattern
-        state.pattern_description = assessment.pattern_description
-        state.sufficient_evidence = assessment.sufficient_evidence
-        state.affected_txn_ids = assessment.affected_txn_ids
-        state.first_suspicious_txn_id = assessment.first_suspicious_txn_id or ""
-        state.connected_card_ids = list(set(state.connected_card_ids + assessment.connected_card_ids))
-        state.connected_device_profiles = assessment.connected_device_profiles
-        state.exposure_usd = assessment.exposure_usd
-        
-        # Determine verdict
-        if assessment.fraud_probability > 0.85:
-            state.verdict = "fraud"
-        elif assessment.fraud_probability < 0.15:
-            state.verdict = "legitimate"
-        else:
-            state.verdict = "uncertain"
-        
-        # Track tokens (estimate)
-        state.tokens += response.usage.input_tokens + response.usage.output_tokens
-        
-        print(f"  ✓ Assessment complete:")
-        print(f"    - Pattern: {state.pattern}")
-        print(f"    - Fraud probability: {state.fraud_probability:.2f}")
-        print(f"    - Confidence: {state.confidence:.2f}")
-        print(f"    - Sufficient evidence: {state.sufficient_evidence}")
-        print(f"    - Verdict: {state.verdict}")
-        
-    except Exception as e:
-        print(f"  ✗ Assessment failed: {e}")
-        print(f"  Using safe defaults")
-        
-        # Safe defaults per SPEC_PROMPTS.md
+    # Deterministic rule-based assessment from graph evidence
+    print("  - Running rule-based assessment...")
+
+    # Extract graph signals
+    txn_data = state.graph_evidence.get("transaction", {})
+    device_data = state.graph_evidence.get("device", {})
+    velocity_data = state.graph_evidence.get("velocity", {})
+
+    risk_signals = txn_data.get("risk_signals", [])
+    device_pattern = device_data.get("pattern", "")
+    device_shared_count = device_data.get("shared_card_count", 1)
+    velocity_pattern = velocity_data.get("pattern_detected", velocity_data.get("pattern", ""))
+    velocity_ratio = velocity_data.get("velocity_ratio", velocity_data.get("ratio", 1.0))
+    txn_amount = txn_data.get("amount", 0.0)
+    risk_score = state.risk_score or 0.5
+
+    # Pattern detection (priority order)
+    if velocity_pattern in ("card_testing_sequence",) or "multiple_small_transactions_before_large" in risk_signals:
+        state.pattern = "card_testing"
+    elif device_shared_count >= 2 or device_pattern == "device_sharing_fraud_ring":
+        state.pattern = "card_not_present_fraud"
+    elif "new_device_for_account" in risk_signals:
+        state.pattern = "card_not_present_new_device"
+    elif "out_of_region" in risk_signals or "out_of_region_use" in risk_signals:
+        state.pattern = "out_of_region_use"
+    elif "account_takeover" in risk_signals:
+        state.pattern = "account_takeover"
+    else:
         state.pattern = "none"
-        state.fraud_probability = 0.5
-        state.confidence = 0.3
-        state.sufficient_evidence = False
+
+    state.pattern_description = ""
+
+    # Fraud probability: weighted from risk_score + signal count + velocity
+    signal_boost = min(len(risk_signals) * 0.07, 0.25)
+    velocity_boost = 0.15 if velocity_ratio >= 5 else (0.08 if velocity_ratio >= 2 else 0.0)
+    device_boost = 0.15 if device_shared_count >= 2 else 0.0
+    fraud_prob = min(risk_score + signal_boost + velocity_boost + device_boost, 0.98)
+    state.fraud_probability = round(fraud_prob, 2)
+
+    # Confidence: higher when multiple corroborating signals
+    corroborating = sum([
+        len(risk_signals) >= 2,
+        device_shared_count >= 2,
+        velocity_ratio >= 5,
+        state.pattern != "none",
+    ])
+    state.confidence = round(min(0.55 + corroborating * 0.12, 0.95), 2)
+    state.sufficient_evidence = state.confidence >= 0.6
+
+    # Affected transactions from evidence
+    state.affected_txn_ids = list({
+        eid
+        for ev in state.evidence
+        for eid in ev.entity_ids
+        if eid.isdigit()
+    })
+    if state.flagged_txn_id and state.flagged_txn_id not in state.affected_txn_ids:
+        state.affected_txn_ids.insert(0, state.flagged_txn_id)
+    state.first_suspicious_txn_id = state.affected_txn_ids[0] if state.affected_txn_ids else ""
+
+    # Exposure
+    state.exposure_usd = round(txn_amount * (1 + device_shared_count - 1), 2) if fraud_prob > 0.5 else 0.0
+
+    # Verdict
+    if fraud_prob > 0.75:
+        state.verdict = "fraud"
+    elif fraud_prob < 0.30:
+        state.verdict = "legitimate"
+    else:
         state.verdict = "uncertain"
+
+    print(f"  ✓ Assessment complete:")
+    print(f"    - Pattern: {state.pattern}")
+    print(f"    - Fraud probability: {state.fraud_probability:.2f}")
+    print(f"    - Confidence: {state.confidence:.2f}")
+    print(f"    - Sufficient evidence: {state.sufficient_evidence}")
+    print(f"    - Verdict: {state.verdict}")
     
     state.log_transition("assess_uncertainty", {
         "fraud_probability": state.fraud_probability,

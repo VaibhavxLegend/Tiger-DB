@@ -161,27 +161,17 @@ class MockMCPServer:
         }
     
     def _infer_scenario(self, identifier: str) -> str:
-        """
-        Infer scenario from ID for demo purposes
-        
-        In real implementation, this would query the graph.
-        For demo, use simple rules based on case_pack.csv patterns.
-        """
-        # Parse case/transaction/card IDs to determine scenario
-        # This is a simplification for demo purposes
-        
-        # High risk scores in case_pack: HHG-002 (0.79), HHG-007 (0.87), HHG-010 (0.90), HHG-019 (0.90)
-        # Customer reports: HHG-003, HHG-004, HHG-006, HHG-008, etc.
-        
-        if any(x in identifier for x in ["HHG-002", "HHG-007", "HHG-010", "HHG-019"]):
+        """Deterministic scenario from identifier hash — gives varied, reproducible results."""
+        # Extract numeric portion of the ID for a stable hash
+        digits = ''.join(c for c in identifier if c.isdigit())
+        seed = int(digits[-4:]) if digits else hash(identifier) & 0xFFFF
+        bucket = seed % 10
+        if bucket <= 5:   # 60% suspicious (clear fraud cases)
             return "suspicious"
-        elif any(x in identifier for x in ["HHG-003", "HHG-004", "HHG-006"]):
-            return "suspicious"  # Customer complaints
-        elif any(x in identifier for x in ["HHG-001", "HHG-005", "HHG-012", "HHG-020"]):
-            return "uncertain"  # Medium risk scores
-        else:
-            # Default to suspicious for demo (makes for better demonstration)
-            return "suspicious"
+        elif bucket <= 7: # 20% uncertain (borderline)
+            return "uncertain"
+        else:             # 20% legitimate
+            return "legitimate"
 
 # Singleton instance
 _server_instance = None

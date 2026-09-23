@@ -86,6 +86,12 @@ def investigate_node(state: CaseState) -> CaseState:
                         state.connected_card_ids.append(card_info["card_id"])
         
         state.graph_evidence["shared_devices"] = data
+        # Also expose under "device" key with the shape assess_uncertainty expects
+        shared_cards = data.get("shared_cards", [])
+        state.graph_evidence["device"] = {
+            "pattern": data.get("pattern", "normal_usage"),
+            "shared_card_count": len(shared_cards),
+        }
         state.tool_calls += 1
         print(f"    ✓ Device risk level: {data.get('risk_level')}")
     

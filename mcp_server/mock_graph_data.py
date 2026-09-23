@@ -80,7 +80,7 @@ def generate_transaction_neighborhood(
         "timestamp": "2016-11-14 09:31:42",
         "channel": "online" if scenario != "legitimate" else random.choice(["online", "in_person"]),
         "product_cd": random.choice(["W", "C", "H"]),
-        "risk_score": 0.79 if scenario == "suspicious" else 0.23,
+        "risk_score": 0.79 if scenario == "suspicious" else (0.52 if scenario == "uncertain" else 0.23),
         "addr1": 444.0,
         "addr2": 87.0,
         "p_email_domain": "gmail.com"

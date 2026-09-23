@@ -84,58 +84,60 @@ IMPORTANT:
 - All explanations must cite evidence refs (e.g., 'Evidence #1', 'query:get_txn_neighborhood')
 - Action justification must reference policy rules"""
 
-    # Call LLM
-    print("  - Calling LLM to generate explanation...")
-    try:
-        client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-        
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=2000,
-            temperature=0.5,
-            messages=[{"role": "user", "content": prompt}]
+    # Template-based explanation (no LLM required)
+    print("  - Generating rule-based explanation...")
+
+    pattern = state.pattern or "none"
+    verdict = state.verdict or "uncertain"
+    prob = state.fraud_probability or 0.5
+    ev_refs = ", ".join([f"Evidence #{i+1}" for i in range(min(len(state.evidence), 4))])
+    actions_text = ", ".join([a.action for a in state.final_actions]) if state.final_actions else "no actions"
+    final_actions = [a if isinstance(a, dict) else a.model_dump() for a in state.final_actions] if state.final_actions else []
+    action_names = [a.get("action", "") if isinstance(a, dict) else a.action for a in state.final_actions] if state.final_actions else []
+
+    state.explanation_summary = (
+        f"Case {state.case_id} investigated for {pattern.replace('_', ' ')} pattern. "
+        f"Fraud probability assessed at {prob:.0%} with verdict: {verdict}. "
+        f"Graph traversal identified {len(state.evidence)} evidence items ({ev_refs}). "
+        f"Recommended actions: {actions_text}."
+    )
+
+    state.evidence_explanation = (
+        f"Graph queries (get_txn_neighborhood, find_shared_devices, velocity_check) returned "
+        f"{len(state.evidence)} signals. Risk score was {state.risk_score:.2f}. "
+        f"Pattern match: {pattern}."
+    )
+
+    state.uncertainty_explanation = (
+        "" if verdict == "fraud" else
+        f"Confidence was {state.confidence:.0%}. Additional evidence was requested to resolve ambiguity."
+    )
+
+    state.action_justification = (
+        f"Actions {action_names} selected per policy rules: "
+        f"R1 (verify before block on weak signal) and R4 (monitor while awaiting verification)."
+    )
+
+    # SAR only for confirmed fraud with high exposure
+    file_sar = verdict == "fraud" and state.exposure_usd >= 5000
+    if file_sar:
+        state.sar_narrative = (
+            f"Suspicious Activity Report: Case {state.case_id}. "
+            f"Card {state.card_id} belonging to customer {state.customer_id} exhibited "
+            f"{pattern.replace('_', ' ')} behavior. "
+            f"Flagged transaction {state.flagged_txn_id} triggered investigation. "
+            f"Total exposure: ${state.exposure_usd:,.2f}. "
+            f"Evidence: {ev_refs}. "
+            f"Fraud probability: {prob:.0%}. Actions taken: {actions_text}."
         )
-        
-        # Parse response
-        response_text = response.content[0].text
-        
-        # Extract JSON (handle markdown code blocks)
-        if "```json" in response_text:
-            response_text = response_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in response_text:
-            response_text = response_text.split("```")[1].split("```")[0].strip()
-        
-        explanation_data = json.loads(response_text)
-        
-        # Validate with pydantic
-        explanation = ExplanationOutput(**explanation_data)
-        
-        # Store in state (adding to state object dynamically)
-        state.explanation_summary = explanation.summary
-        state.sar_narrative = explanation.sar_narrative
-        state.sar_subjects = explanation.sar_subjects
-        state.evidence_explanation = explanation.evidence_explanation
-        state.uncertainty_explanation = explanation.uncertainty_explanation
-        state.action_justification = explanation.action_justification
-        
-        # Track tokens
-        state.tokens += response.usage.input_tokens + response.usage.output_tokens
-        
-        print(f"  ✓ Explanation generated:")
-        print(f"    - Summary: {explanation.summary[:100]}...")
-        print(f"    - SAR required: {bool(explanation.sar_narrative)}")
-        
-    except Exception as e:
-        print(f"  ✗ Explanation generation failed: {e}")
-        print(f"  Using safe default explanation")
-        
-        # Safe default per SPEC_PROMPTS.md
-        state.explanation_summary = "Case investigation completed with validation errors. Recommend analyst review."
+        state.sar_subjects = [state.customer_id]
+    else:
         state.sar_narrative = ""
         state.sar_subjects = []
-        state.evidence_explanation = "Evidence processing encountered errors"
-        state.uncertainty_explanation = ""
-        state.action_justification = "Actions could not be fully justified, case escalated"
+
+    print(f"  ✓ Explanation generated:")
+    print(f"    - Summary: {state.explanation_summary[:100]}...")
+    print(f"    - SAR required: {file_sar}")
     
     state.log_transition("explain", {
         "explanation_generated": True,

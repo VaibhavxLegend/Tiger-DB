@@ -86,76 +86,42 @@ IMPORTANT:
 - Step-up auth for card testing patterns
 - Analyst info for complex/conflicting evidence"""
 
-    # Call LLM
-    print("  - Calling LLM to select evidence action...")
-    try:
-        client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-        
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=1000,
-            temperature=0.4,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        
-        # Parse response
-        response_text = response.content[0].text
-        
-        # Extract JSON (handle markdown code blocks)
-        if "```json" in response_text:
-            response_text = response_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in response_text:
-            response_text = response_text.split("```")[1].split("```")[0].strip()
-        
-        evidence_request_data = json.loads(response_text)
-        
-        # Validate with pydantic
-        evidence_request = EvidenceRequestOutput(**evidence_request_data)
-        
-        # Create EvidenceRequest object
-        request = EvidenceRequest(
-            type=evidence_request.evidence_type,
-            asked_after_step=state.iteration_count,
-            assumed_response=evidence_request.simulated_response
-        )
-        
-        # Add to state
-        state.evidence_requests.append(request)
-        
-        # Append simulated response as new evidence
-        state.evidence.append(Evidence(
-            claim=f"{evidence_request.evidence_type}: {evidence_request.simulated_response}",
-            source="customer" if evidence_request.evidence_type == "customer_validation" else "external",
-            ref=f"evidence_request:{len(state.evidence_requests)}",
-            entity_ids=[state.customer_id]
-        ))
-        
-        # Track tokens
-        state.tokens += response.usage.input_tokens + response.usage.output_tokens
-        
-        print(f"  ✓ Evidence request created:")
-        print(f"    - Type: {evidence_request.evidence_type}")
-        print(f"    - Justification: {evidence_request.justification[:80]}...")
-        print(f"    - Simulated response: {evidence_request.simulated_response[:80]}...")
-        
-    except Exception as e:
-        print(f"  ✗ Evidence request failed: {e}")
-        print(f"  Using safe default (analyst_info)")
-        
-        # Safe default per SPEC_PROMPTS.md
-        request = EvidenceRequest(
-            type="analyst_info",
-            asked_after_step=state.iteration_count,
-            assumed_response="Analyst recommends closing as uncertain"
-        )
-        state.evidence_requests.append(request)
-        
-        state.evidence.append(Evidence(
-            claim="analyst_info: Analyst recommends closing as uncertain",
-            source="external",
-            ref=f"evidence_request:{len(state.evidence_requests)}",
-            entity_ids=[state.customer_id]
-        ))
+    # Deterministic evidence type selection
+    print("  - Selecting evidence type (rule-based)...")
+
+    pattern = state.pattern or "none"
+    num_signals = len(state.graph_evidence.get("transaction", {}).get("risk_signals", []))
+    iteration = state.iteration_count
+
+    # Rotate: first ask customer, then analyst on repeat
+    if iteration == 0 and pattern in ("card_not_present_new_device", "none"):
+        ev_type = "customer_validation"
+        simulated = "Customer confirmed they made the transaction. No dispute raised."
+    elif pattern == "card_testing":
+        ev_type = "step_up_auth"
+        simulated = "Step-up authentication challenge sent; customer did not respond within timeout."
+    else:
+        ev_type = "analyst_info"
+        simulated = "Analyst reviewed signals and recommends closing as uncertain pending additional monitoring."
+
+    request = EvidenceRequest(
+        type=ev_type,
+        asked_after_step=state.iteration_count,
+        assumed_response=simulated
+    )
+    state.evidence_requests.append(request)
+
+    source = "customer" if ev_type == "customer_validation" else "external"
+    state.evidence.append(Evidence(
+        claim=f"{ev_type}: {simulated}",
+        source=source,
+        ref=f"evidence_request:{len(state.evidence_requests)}",
+        entity_ids=[state.customer_id]
+    ))
+
+    print(f"  ✓ Evidence request created:")
+    print(f"    - Type: {ev_type}")
+    print(f"    - Simulated response: {simulated[:80]}...")
     
     # Increment iteration count
     state.iteration_count += 1
