@@ -45,7 +45,6 @@ ui/.env.local
 ui/.env.production.local
 
 raw
-cases
 
 # Logs
 *.log

@@ -1,0 +1,84 @@
+{
+  "case_id": "HHG-009",
+  "case": {
+    "status": "closed",
+    "verdict": "uncertain",
+    "fraud_probability": 0.64,
+    "pattern": "none",
+    "pattern_description": "",
+    "affected_txn_ids": [
+      "3581141"
+    ],
+    "first_suspicious_txn_id": "3581141",
+    "connected_card_ids": [],
+    "connected_device_profiles": [],
+    "exposure_usd": 0.0,
+    "evidence": [
+      {
+        "claim": "Transaction $337.35 via online, risk score 0.52",
+        "source": "graph",
+        "ref": "query:get_txn_neighborhood",
+        "entity_ids": [
+          "3581141"
+        ]
+      },
+      {
+        "claim": "Risk signals: higher_than_usual_amount, new_merchant_category",
+        "source": "graph",
+        "ref": "query:get_txn_neighborhood",
+        "entity_ids": [
+          "3581141"
+        ]
+      }
+    ],
+    "similar_prior_cases": [
+      "CC-3890"
+    ],
+    "summary": "Case HHG-009 investigated for none pattern. Fraud probability assessed at 64% with verdict: uncertain. Graph traversal identified 2 evidence items (Evidence #1, Evidence #2). Recommended actions: VERIFY_WITH_CUSTOMER, MONITOR_CARD.",
+    "written_to_graph": true,
+    "graph_case_id": "HHG-009"
+  },
+  "evidence_requests": [],
+  "next_best_actions": {
+    "initial": [
+      {
+        "action": "VERIFY_WITH_CUSTOMER",
+        "route": "auto",
+        "reason": "R1: Verify before block on weak signal"
+      },
+      {
+        "action": "MONITOR_CARD",
+        "route": "auto",
+        "reason": "R4: Monitor while awaiting verification"
+      }
+    ],
+    "final": [
+      {
+        "action": "VERIFY_WITH_CUSTOMER",
+        "route": "auto",
+        "reason": "R1: Verify before block on weak signal"
+      },
+      {
+        "action": "MONITOR_CARD",
+        "route": "auto",
+        "reason": "R4: Monitor while awaiting verification"
+      }
+    ],
+    "what_changed": "Nothing changed"
+  },
+  "sar": {
+    "file": false,
+    "reason": "No SAR required",
+    "narrative": "",
+    "subjects": [],
+    "total_amount_usd": 0.0,
+    "activity_dates": [
+      "2016-11-01",
+      "2016-12-31"
+    ]
+  },
+  "stop_reason": "",
+  "tool_calls": 3,
+  "tokens": 0,
+  "latency_s": 0.0012123584747314453
+}

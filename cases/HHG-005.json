@@ -1,0 +1,103 @@
+{
+  "case_id": "HHG-005",
+  "case": {
+    "status": "closed",
+    "verdict": "fraud",
+    "fraud_probability": 0.98,
+    "pattern": "card_testing",
+    "pattern_description": "",
+    "affected_txn_ids": [
+      "3523199"
+    ],
+    "first_suspicious_txn_id": "3523199",
+    "connected_card_ids": [
+      "C00877-K1"
+    ],
+    "connected_device_profiles": [],
+    "exposure_usd": 0.0,
+    "evidence": [
+      {
+        "claim": "Transaction $333.17 via online, risk score 0.79",
+        "source": "graph",
+        "ref": "query:get_txn_neighborhood",
+        "entity_ids": [
+          "3523199"
+        ]
+      },
+      {
+        "claim": "Risk signals: new_device_for_account, multiple_small_transactions_before_large, amount_above_card_average",
+        "source": "graph",
+        "ref": "query:get_txn_neighborhood",
+        "entity_ids": [
+          "3523199"
+        ]
+      },
+      {
+        "claim": "Device shared across 2 cards, pattern: device_sharing_fraud_ring",
+        "source": "graph",
+        "ref": "query:find_shared_devices",
+        "entity_ids": [
+          "C00877-K1",
+          "C02923-K1"
+        ]
+      },
+      {
+        "claim": "Velocity pattern: card_testing_sequence, 4 txns, ratio 30.0x normal",
+        "source": "graph",
+        "ref": "query:velocity_check",
+        "entity_ids": [
+          "C02923-K1"
+        ]
+      }
+    ],
+    "similar_prior_cases": [
+      "CC-3890"
+    ],
+    "summary": "Case HHG-005 investigated for card testing pattern. Fraud probability assessed at 98% with verdict: fraud. Graph traversal identified 4 evidence items (Evidence #1, Evidence #2, Evidence #3, Evidence #4). Recommended actions: BLOCK_CARD, CREATE_CASE.",
+    "written_to_graph": true,
+    "graph_case_id": "HHG-005"
+  },
+  "evidence_requests": [],
+  "next_best_actions": {
+    "initial": [
+      {
+        "action": "BLOCK_CARD",
+        "route": "L1",
+        "reason": "R2: Fraud probability 0.98, pattern: card_testing"
+      },
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "R2: Document confirmed fraud"
+      }
+    ],
+    "final": [
+      {
+        "action": "BLOCK_CARD",
+        "route": "L1",
+        "reason": "R2: Fraud probability 0.98, pattern: card_testing"
+      },
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "R2: Document confirmed fraud"
+      }
+    ],
+    "what_changed": "Nothing changed"
+  },
+  "sar": {
+    "file": false,
+    "reason": "No SAR required",
+    "narrative": "",
+    "subjects": [],
+    "total_amount_usd": 0.0,
+    "activity_dates": [
+      "2016-11-01",
+      "2016-12-31"
+    ]
+  },
+  "stop_reason": "",
+  "tool_calls": 3,
+  "tokens": 0,
+  "latency_s": 0.0012390613555908203
+}
