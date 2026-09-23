@@ -1,0 +1,108 @@
+{
+  "timestamp": "2026-09-23T14:31:46.055793",
+  "total_cases": 20,
+  "successful": 20,
+  "failed": 0,
+  "results": [
+    {
+      "case_id": "HHG-001",
+      "status": "success",
+      "latency": 0.029841899871826172
+    },
+    {
+      "case_id": "HHG-002",
+      "status": "success",
+      "latency": 0.004728794097900391
+    },
+    {
+      "case_id": "HHG-003",
+      "status": "success",
+      "latency": 0.004639863967895508
+    },
+    {
+      "case_id": "HHG-004",
+      "status": "success",
+      "latency": 0.0046079158782958984
+    },
+    {
+      "case_id": "HHG-005",
+      "status": "success",
+      "latency": 0.004618167877197266
+    },
+    {
+      "case_id": "HHG-006",
+      "status": "success",
+      "latency": 0.004581928253173828
+    },
+    {
+      "case_id": "HHG-007",
+      "status": "success",
+      "latency": 0.004542827606201172
+    },
+    {
+      "case_id": "HHG-008",
+      "status": "success",
+      "latency": 0.004779815673828125
+    },
+    {
+      "case_id": "HHG-009",
+      "status": "success",
+      "latency": 0.00442814826965332
+    },
+    {
+      "case_id": "HHG-010",
+      "status": "success",
+      "latency": 0.004394054412841797
+    },
+    {
+      "case_id": "HHG-011",
+      "status": "success",
+      "latency": 0.0048980712890625
+    },
+    {
+      "case_id": "HHG-012",
+      "status": "success",
+      "latency": 0.004605770111083984
+    },
+    {
+      "case_id": "HHG-013",
+      "status": "success",
+      "latency": 0.0045130252838134766
+    },
+    {
+      "case_id": "HHG-014",
+      "status": "success",
+      "latency": 0.004909038543701172
+    },
+    {
+      "case_id": "HHG-015",
+      "status": "success",
+      "latency": 0.004823923110961914
+    },
+    {
+      "case_id": "HHG-016",
+      "status": "success",
+      "latency": 0.004556179046630859
+    },
+    {
+      "case_id": "HHG-017",
+      "status": "success",
+      "latency": 0.004606962203979492
+    },
+    {
+      "case_id": "HHG-018",
+      "status": "success",
+      "latency": 0.005248069763183594
+    },
+    {
+      "case_id": "HHG-019",
+      "status": "success",
+      "latency": 0.0045909881591796875
+    },
+    {
+      "case_id": "HHG-020",
+      "status": "success",
+      "latency": 0.0070836544036865234
+    }
+  ]
+}

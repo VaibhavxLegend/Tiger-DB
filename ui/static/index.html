@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TigerGraph Fraud Investigation Console</title>
+    <style>
+        body { font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f7f9; color: #333; margin: 0; padding: 0; }
+        .header { background: #1f2937; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; }
+        .card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .case-list { height: 600px; overflow-y: auto; }
+        .case-item { padding: 1rem; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 1rem; cursor: pointer; transition: 0.2s; }
+        .case-item:hover { border-color: #3b82f6; }
+        .badge { padding: 0.25rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-fraud { background: #fee2e2; color: #991b1b; }
+        .badge-legit { background: #d1fae5; color: #065f46; }
+        .badge-uncertain { background: #fef3c7; color: #92400e; }
+        input, button { padding: 0.5rem; margin-top: 0.5rem; box-sizing: border-box; }
+        button { background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #2563eb; }
+        .detail-section { margin-top: 1.5rem; border-top: 1px solid #e5e7eb; padding-top: 1rem; }
+        .evidence-list { list-style-type: none; padding-left: 0; }
+        .evidence-list li { padding: 0.5rem 0; border-bottom: 1px dashed #e5e7eb; }
+        pre { background: #f3f4f6; padding: 1rem; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>🐅 TigerGraph Agentic Fraud Investigator</h2>
+        <button onclick="document.getElementById('trigger-modal').style.display='block'">+ Trigger New Case</button>
+    </div>
+    
+    <div class="container">
+        <div class="card case-list" id="case-list">
+            <h3>Recent Cases</h3>
+            <div id="cases-container">Loading limits...</div>
+        </div>
+        
+        <div class="card case-detail" id="case-detail">
+            <h3>Case Details</h3>
+            <p>Select a case from the left to view details.</p>
+        </div>
+    </div>
+
+    <!-- Trigger Modal -->
+    <div id="trigger-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100;">
+        <div style="background:white; max-width:400px; margin:100px auto; padding:2rem; border-radius:8px;">
+            <h3>Trigger Investigation</h3>
+            <input type="text" id="t-case" placeholder="Case ID (e.g. HHG-999)" style="width:100%"><br>
+            <input type="text" id="t-txn" placeholder="Transaction ID" style="width:100%"><br>
+            <input type="text" id="t-card" placeholder="Card ID" style="width:100%"><br>
+            <input type="text" id="t-cust" placeholder="Customer ID" style="width:100%"><br>
+            <input type="number" id="t-risk" placeholder="Risk Score (0.0-1.0)" step="0.01" style="width:100%"><br>
+            <button onclick="triggerCase()" style="width:100%; margin-top:1rem;">Run Agent Workflow</button>
+            <button onclick="document.getElementById('trigger-modal').style.display='none'" style="width:100%; margin-top:0.5rem; background:#6b7280;">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        let allCases = [];
+        
+        async function loadCases() {
+            try {
+                const res = await fetch('/api/cases');
+                allCases = await res.json();
+                renderCases();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        
+        function renderCases() {
+            const c = document.getElementById('cases-container');
+            if (allCases.length === 0) {
+                c.innerHTML = "No cases found. Try triggering one or running the benchmark.";
+                return;
+            }
+            c.innerHTML = allCases.map((data, idx) => `
+                <div class="case-item" onclick="showCase(${idx})">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong>${data.case_id}</strong>
+                        <span class="badge badge-${data.case.verdict === 'fraud' ? 'fraud' : data.case.verdict === 'legitimate' ? 'legit' : 'uncertain'}">
+                            ${data.case.verdict.toUpperCase()}
+                        </span>
+                    </div>
+                    <p style="font-size:0.875rem; margin:0.5rem 0;">Probability: ${data.case.fraud_probability.toFixed(2)} | Exposure: $${data.case.exposure_usd.toFixed(2)}</p>
+                    <p style="font-size:0.75rem; color:#6b7280; margin:0;">Pattern: ${data.case.pattern}</p>
+                </div>
+            `).join('');
+        }
+        
+        function showCase(idx) {
+            const data = allCases[idx];
+            const c = document.getElementById('case-detail');
+            c.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3>${data.case_id} Analysis</h3>
+                    <span class="badge badge-${data.case.verdict === 'fraud' ? 'fraud' : data.case.verdict === 'legitimate' ? 'legit' : 'uncertain'}" style="font-size:1rem;">
+                        ${data.case.verdict.toUpperCase()}
+                    </span>
+                </div>
+                <p><strong>Latency:</strong> ${data.latency_s.toFixed(2)}s | <strong>Tool Calls:</strong> ${data.tool_calls} | <strong>Tokens:</strong> ${data.tokens}</p>
+                
+                <div class="detail-section">
+                    <h4>Executive Summary</h4>
+                    <p>${data.case.summary}</p>
+                </div>
+                
+                <div class="detail-section">
+                    <h4>Evidence Log</h4>
+                    <ul class="evidence-list">
+                        ${data.case.evidence.map(e => `<li>✅ ${e.claim} <br><small style="color:#6b7280;">(Source: ${e.source} | Ref: ${e.ref})</small></li>`).join('')}
+                    </ul>
+                </div>
+                
+                <div class="detail-section">
+                    <h4>Final Recommended Actions</h4>
+                    ${data.next_best_actions.final.map(a => `
+                        <div style="margin-bottom:0.5rem; padding:0.5rem; background:#f3f4f6; border-radius:4px;">
+                            <strong>${a.action}</strong> (Route: ${a.route})<br>
+                            <small>${a.reason}</small>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                ${data.sar.file ? `
+                <div class="detail-section" style="background:#fffbeb; padding:1rem; border-radius:4px; border:1px solid #fde68a;">
+                    <h4 style="color:#b45309; margin-top:0;">SAR Required</h4>
+                    <pre style="white-space:pre-wrap; background:none; border:none; padding:0;">${data.sar.narrative}</pre>
+                </div>` : ''}
+                
+                <div class="detail-section">
+                    <button onclick="console.log(allCases[${idx}])">Log Full JSON</button>
+                    ${data.case.written_to_graph ? `<span style="color:#10b981; font-weight:bold; margin-left:1rem;">✓ Written to TigerGraph Database</span>` : ''}
+                </div>
+            `;
+        }
+        
+        async function triggerCase() {
+            const payload = {
+                case_id: document.getElementById('t-case').value,
+                flagged_txn_id: document.getElementById('t-txn').value,
+                card_id: document.getElementById('t-card').value,
+                customer_id: document.getElementById('t-cust').value,
+                risk_score: parseFloat(document.getElementById('t-risk').value)
+            };
+            
+            document.getElementById('trigger-modal').style.display='none';
+            document.getElementById('case-detail').innerHTML = "<h3>Running Agent Workflow...</h3><p>Consulting GraphRAG and querying MCP Tools...</p>";
+            
+            try {
+                const res = await fetch('/api/trigger', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                await loadCases();
+                
+                // Select the newly run case
+                const idx = allCases.findIndex(c => c.case_id === result.case_id);
+                if (idx !== -1) showCase(idx);
+                
+            } catch (e) {
+                document.getElementById('case-detail').innerHTML = "<h3>Error running case</h3><p>" + e.message + "</p>";
+            }
+        }
+        
+        loadCases();
+    </script>
+</body>
+</html>
