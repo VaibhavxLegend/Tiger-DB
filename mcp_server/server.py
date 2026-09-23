@@ -98,7 +98,7 @@ class MockMCPServer:
         
         # Determine scenario based on transaction/card ID patterns
         # For demo, use simple heuristics
-        scenario = self._infer_scenario(input_data.transaction_id)
+        scenario = self._infer_scenario(input_data.card_id)  # consistent with device/velocity
         
         result = generate_transaction_neighborhood(
             txn_id=input_data.transaction_id,
@@ -162,16 +162,14 @@ class MockMCPServer:
     
     def _infer_scenario(self, identifier: str) -> str:
         """Deterministic scenario from identifier hash — gives varied, reproducible results."""
-        # Extract numeric portion of the ID for a stable hash
         digits = ''.join(c for c in identifier if c.isdigit())
-        seed = int(digits[-4:]) if digits else hash(identifier) & 0xFFFF
-        bucket = seed % 10
-        if bucket <= 5:   # 60% suspicious (clear fraud cases)
-            return "suspicious"
-        elif bucket <= 7: # 20% uncertain (borderline)
-            return "uncertain"
-        else:             # 20% legitimate
+        seed = int(digits) % 97 if digits else hash(identifier) & 0xFF
+        if seed % 5 == 0:          # 20% legitimate
             return "legitimate"
+        elif seed % 5 <= 1:        # 20% uncertain
+            return "uncertain"
+        else:                      # 60% suspicious
+            return "suspicious"
 
 # Singleton instance
 _server_instance = None
