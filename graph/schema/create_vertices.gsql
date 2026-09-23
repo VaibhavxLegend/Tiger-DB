@@ -1,0 +1,99 @@
+// Create vertex types for fraud investigation graph
+// Phase 1: Graph Foundation
+
+USE GRAPH FraudInvestigation
+
+// Customer vertex
+CREATE VERTEX Customer (
+  PRIMARY_ID customer_id STRING,
+  created_at DATETIME
+) WITH primary_id_as_attribute="true"
+
+// Card vertex
+CREATE VERTEX Card (
+  PRIMARY_ID card_id STRING,
+  customer_id STRING,
+  card_network STRING,  // card4: visa, mastercard, american express, discover
+  card_type STRING,     // card6: credit, debit
+  card1 INT,
+  card2 FLOAT,
+  card3 FLOAT,
+  card5 INT,
+  created_at DATETIME
+) WITH primary_id_as_attribute="true"
+
+// Transaction vertex
+CREATE VERTEX Transaction (
+  PRIMARY_ID transaction_id STRING,
+  transaction_dt INT,         // Original TransactionDT
+  ts DATETIME,                // Real timestamp
+  amount FLOAT,               // TransactionAmt
+  product_cd STRING,          // ProductCD: W, C, H, R, S
+  channel STRING,             // in_person or online
+  risk_score FLOAT,           // 0-1 from model
+  addr1 FLOAT,                // Billing region
+  addr2 FLOAT,                // Billing country
+  dist1 FLOAT,
+  dist2 FLOAT,
+  p_email_domain STRING,      // Purchaser email domain
+  r_email_domain STRING,      // Recipient email domain
+  // Store key Vesta features as JSON or separate attributes
+  c_features STRING,          // C1-C14 as JSON
+  d_features STRING,          // D1-D15 as JSON
+  m_features STRING,          // M1-M9 as JSON
+  v_features STRING           // V1-V339 as JSON (or subset)
+) WITH primary_id_as_attribute="true"
+
+// Device vertex (from identity.csv)
+CREATE VERTEX Device (
+  PRIMARY_ID device_id STRING,
+  device_type STRING,         // mobile or desktop
+  device_info STRING,         // Full device string
+  os STRING,                  // id_30
+  browser STRING,             // id_31
+  screen STRING,              // id_33
+  device_new_found STRING,    // id_15: New or Found
+  proxy_type STRING,          // id_23: transparent, anonymous, hidden
+  id_features STRING          // id_01 to id_38 as JSON
+) WITH primary_id_as_attribute="true"
+
+// Address vertex (billing region)
+CREATE VERTEX Address (
+  PRIMARY_ID addr_id STRING,  // addr1 value as string
+  addr1 FLOAT,
+  addr2 FLOAT                 // country code
+) WITH primary_id_as_attribute="true"
+
+// EmailDomain vertex
+CREATE VERTEX EmailDomain (
+  PRIMARY_ID domain STRING
+) WITH primary_id_as_attribute="true"
+
+// Case vertex (both benchmark and closed cases)
+CREATE VERTEX Case (
+  PRIMARY_ID case_id STRING,
+  opened_at DATETIME,
+  closed_at DATETIME,
+  status STRING,              // open, closed_fraud, closed_legitimate, escalated
+  verdict STRING,             // fraud, legitimate, uncertain
+  fraud_probability FLOAT,
+  confidence FLOAT,
+  pattern STRING,             // card_testing, card_not_present_fraud, etc.
+  pattern_description STRING,
+  exposure_usd FLOAT,
+  n_txns INT,
+  trigger_type STRING,        // risk_score, customer_report, analyst_request
+  trigger_text STRING,
+  actions_taken STRING,
+  report_filed BOOL,
+  analyst_notes STRING,
+  summary STRING
+) WITH primary_id_as_attribute="true"
+
+// FraudPattern vertex (for pattern taxonomy)
+CREATE VERTEX FraudPattern (
+  PRIMARY_ID pattern_name STRING,
+  description STRING,
+  indicators STRING,          // JSON list of indicators
+  policy_rule STRING          // e.g., "R5"
+) WITH primary_id_as_attribute="true"

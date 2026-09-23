@@ -1,0 +1,7 @@
+// GSQL query: Retrieve similar past cases from closed_cases_history
+// Phase 2: GSQL Tools
+
+// TODO: CREATE QUERY get_similar_past_cases(...) {
+//   Returns: Closed cases with similar patterns, entities, outcomes
+//   Pre-aggregated summary
+// }

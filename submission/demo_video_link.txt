@@ -1,0 +1,13 @@
+# Demo Video Link
+
+[To be added in Phase 6]
+
+Demo video will cover:
+1. Live trigger of new investigation from UI
+2. Evidence panel showing graph neighborhood
+3. Uncertain case triggering evidence-gathering loop
+4. Final action + approval routing + explanation
+5. Benchmark output file
+6. Case written to graph and retrievable
+
+Target length: 3-5 minutes

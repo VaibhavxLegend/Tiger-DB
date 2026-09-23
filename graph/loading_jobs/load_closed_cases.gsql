@@ -1,0 +1,7 @@
+// GSQL loading job for closed_cases_history_exploded.csv
+// Phase 1: Graph Foundation
+
+// TODO: CREATE LOADING JOB load_closed_cases FOR GRAPH FraudInvestigation {
+//   DEFINE FILENAME closed_cases_file = "data/processed/closed_cases_history_exploded.csv";
+//   LOAD closed_cases_file TO VERTEX Case ...
+// }

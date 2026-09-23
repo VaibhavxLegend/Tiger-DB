@@ -1,0 +1,7 @@
+// GSQL query: Find cards sharing the same device
+// Phase 2: GSQL Tools
+
+// TODO: CREATE QUERY find_shared_devices(...) {
+//   Returns: Device clusters, cards using same device, time windows
+//   Pre-aggregated summary
+// }

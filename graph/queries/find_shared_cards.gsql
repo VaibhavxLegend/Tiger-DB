@@ -1,0 +1,7 @@
+// GSQL query: Find shared card patterns (linked cards)
+// Phase 2: GSQL Tools
+
+// TODO: CREATE QUERY find_shared_cards(...) {
+//   Returns: Card clusters based on shared attributes
+//   Pre-aggregated summary
+// }

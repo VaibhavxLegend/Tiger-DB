@@ -1,0 +1,24 @@
+{
+  "algorithms": {
+    "weakly_connected_components": {
+      "description": "Find device/card clusters for fraud ring detection",
+      "parameters": {
+        "max_iterations": 100
+      }
+    },
+    "louvain": {
+      "description": "Find account communities for pattern detection",
+      "parameters": {
+        "max_iterations": 10,
+        "resolution": 1.0
+      }
+    },
+    "pagerank": {
+      "description": "Identify hub accounts/devices",
+      "parameters": {
+        "max_iterations": 20,
+        "damping_factor": 0.85
+      }
+    }
+  }
+}

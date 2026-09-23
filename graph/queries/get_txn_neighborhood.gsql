@@ -1,0 +1,7 @@
+// GSQL query: Get k-hop neighborhood of a transaction
+// Phase 2: GSQL Tools
+
+// TODO: CREATE QUERY get_txn_neighborhood(...) {
+//   Returns: Transaction, Card, Customer, Device, Address, EmailDomain
+//   Pre-aggregated summary, not raw rows
+// }

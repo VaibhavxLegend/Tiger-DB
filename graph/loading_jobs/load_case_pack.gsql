@@ -1,0 +1,7 @@
+// GSQL loading job for case_pack.csv
+// Phase 1: Graph Foundation
+
+// TODO: CREATE LOADING JOB load_case_pack FOR GRAPH FraudInvestigation {
+//   DEFINE FILENAME case_pack_file = "data/raw/case_pack.csv";
+//   LOAD case_pack_file TO VERTEX Case ...
+// }

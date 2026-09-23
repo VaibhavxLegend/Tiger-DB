@@ -1,0 +1,19 @@
+name: tigergraph-fraud-mcp
+version: 1.0.0
+description: MCP server for TigerGraph fraud investigation tools
+
+tools:
+  - name: get_txn_neighborhood
+    description: Get k-hop neighborhood of a transaction including card, customer, devices, addresses
+    
+  - name: find_shared_devices
+    description: Find cards sharing the same device profile
+    
+  - name: find_shared_cards
+    description: Find shared card patterns and linked cards
+    
+  - name: velocity_check
+    description: Check transaction velocity and pattern anomalies
+    
+  - name: get_similar_past_cases
+    description: Retrieve similar closed cases from history

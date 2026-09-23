@@ -1,0 +1,29 @@
+// Create graph with all vertices and edges
+// Phase 1: Graph Foundation
+
+CREATE GRAPH FraudInvestigation (
+  // Vertices
+  Customer,
+  Card,
+  Transaction,
+  Device,
+  Address,
+  EmailDomain,
+  Case,
+  FraudPattern,
+  
+  // Edges
+  OWNED_BY,
+  MADE_BY,
+  USES_DEVICE,
+  FROM_ADDR,
+  USES_P_EMAIL,
+  USES_R_EMAIL,
+  PART_OF_CASE,
+  CASE_INVOLVES_CARD,
+  CASE_INVOLVES_CUSTOMER,
+  LINKED_CARD,
+  MATCHED_PATTERN,
+  SIMILAR_TO,
+  NEXT_TXN
+)

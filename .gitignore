@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# TigerGraph
+*.gsql.log
+
+# Vector store
+rag/vector_store/chroma.sqlite3
+rag/vector_store/chroma/
+
+# Node.js / UI
+ui/node_modules/
+ui/.next/
+ui/out/
+ui/build/
+ui/dist/
+ui/.env.local
+ui/.env.production.local
+
+raw
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data (exclude processed, keep raw via LFS or external)
+# data/processed/*.csv
+
+# Optional: large data files (if not using Git LFS)
+# data/raw/*.csv

@@ -1,0 +1,7 @@
+// GSQL query: Check transaction velocity patterns
+// Phase 2: GSQL Tools
+
+// TODO: CREATE QUERY velocity_check(...) {
+//   Returns: Transaction frequency, amount patterns, time windows
+//   Pre-aggregated summary
+// }

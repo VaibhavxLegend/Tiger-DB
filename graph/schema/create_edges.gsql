@@ -1,0 +1,98 @@
+// Create edge types for fraud investigation graph
+// Phase 1: Graph Foundation
+
+USE GRAPH FraudInvestigation
+
+// Card ownership
+CREATE UNDIRECTED EDGE OWNED_BY (
+  FROM Card,
+  TO Customer
+)
+
+// Transaction to card relationship
+CREATE DIRECTED EDGE MADE_BY (
+  FROM Transaction,
+  TO Card,
+  ts DATETIME
+)
+
+// Transaction to device relationship (online only)
+CREATE DIRECTED EDGE USES_DEVICE (
+  FROM Transaction,
+  TO Device,
+  ts DATETIME
+)
+
+// Transaction to billing address
+CREATE DIRECTED EDGE FROM_ADDR (
+  FROM Transaction,
+  TO Address,
+  ts DATETIME
+)
+
+// Transaction to email domain (purchaser)
+CREATE DIRECTED EDGE USES_P_EMAIL (
+  FROM Transaction,
+  TO EmailDomain,
+  ts DATETIME,
+  email_type STRING  // "purchaser"
+)
+
+// Transaction to email domain (recipient)
+CREATE DIRECTED EDGE USES_R_EMAIL (
+  FROM Transaction,
+  TO EmailDomain,
+  ts DATETIME,
+  email_type STRING  // "recipient"
+)
+
+// Case to transaction relationship
+CREATE DIRECTED EDGE PART_OF_CASE (
+  FROM Transaction,
+  TO Case,
+  is_flagged BOOL,       // True for the flagged transaction
+  added_at DATETIME
+)
+
+// Card involved in case
+CREATE DIRECTED EDGE CASE_INVOLVES_CARD (
+  FROM Case,
+  TO Card,
+  is_primary BOOL        // True for the flagged card
+)
+
+// Case customer
+CREATE DIRECTED EDGE CASE_INVOLVES_CUSTOMER (
+  FROM Case,
+  TO Customer
+)
+
+// Linked cards (shared device, shared address, etc.)
+CREATE UNDIRECTED EDGE LINKED_CARD (
+  FROM Card,
+  TO Card,
+  link_type STRING,      // "shared_device", "shared_address", "shared_email"
+  strength FLOAT         // Link strength score
+)
+
+// Case matched to pattern
+CREATE DIRECTED EDGE MATCHED_PATTERN (
+  FROM Case,
+  TO FraudPattern,
+  confidence FLOAT
+)
+
+// Similar cases
+CREATE UNDIRECTED EDGE SIMILAR_TO (
+  FROM Case,
+  TO Case,
+  similarity_score FLOAT,
+  shared_entities STRING  // JSON: which entities/patterns are shared
+)
+
+// Sequential transactions on same card
+CREATE DIRECTED EDGE NEXT_TXN (
+  FROM Transaction,
+  TO Transaction,
+  time_delta_seconds INT
+)

@@ -1,0 +1,7 @@
+// GSQL loading job for identity.csv
+// Phase 1: Graph Foundation
+
+// TODO: CREATE LOADING JOB load_identity FOR GRAPH FraudInvestigation {
+//   DEFINE FILENAME identity_file = "data/raw/identity.csv";
+//   LOAD identity_file TO VERTEX Device ...
+// }

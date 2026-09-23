@@ -1,0 +1,7 @@
+// GSQL loading job for transactions.csv
+// Phase 1: Graph Foundation
+
+// TODO: CREATE LOADING JOB load_transactions FOR GRAPH FraudInvestigation {
+//   DEFINE FILENAME transactions_file = "data/raw/transactions.csv";
+//   LOAD transactions_file TO VERTEX Transaction ...
+// }
