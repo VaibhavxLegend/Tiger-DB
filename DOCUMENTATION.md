@@ -92,14 +92,13 @@ recommend_action → explain → update_memory → end
 ## Configuration
 
 ### Environment Variables
-- `ANTHROPIC_API_KEY`: For LLM calls (not required for deterministic mode)
-- `ANTHROPIC_BASE_URL`: Set to `http://localhost:20128` for Claude Code proxy
+- `GOOGLE_API_KEY`: For Gemini LLM calls (not required for deterministic mode)
 - TigerGraph connection details in `.env`
 
 ### Dependencies
 - Python 3.9+
 - TigerGraph Savanna account
-- Required packages: fastapi, uvicorn, pydantic, python-dotenv, anthropic
+- Required packages: fastapi, uvicorn, pydantic, python-dotenv, langchain-google-genai
 
 ## Usage
 
@@ -117,7 +116,7 @@ Visit `http://localhost:8080/` to view Case Investigation Console.
 
 ## Deterministic Mode (No LLM)
 
-When Anthropic API is unavailable, the system uses rule-based logic in:
+When Google API Key is unavailable, the system uses rule-based logic in:
 - `assess_uncertainty_node`: Calculates fraud probability from risk signals
 - `gather_more_evidence_node`: Selects evidence type based on pattern and iteration
 - `explain_node`: Generates template-based explanations from state fields

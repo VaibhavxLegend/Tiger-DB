@@ -10,7 +10,7 @@
 - [ ] Confirm real `transaction.csv` and `identity.csv` headers (don't assume the standard IEEE-CIS layout — verify).
 - [ ] Read the dataset README fully: exact benchmark answer-file schema, how the 20 benchmark cases are structured, whether expected outcomes are provided for self-scoring.
 - [ ] Spin up TigerGraph Savanna instance; confirm auto-stop/auto-start is on.
-- [ ] Get Anthropic API key + confirm `tigergraph-mcp` repo runs locally against Savanna with a trivial query.
+- [ ] Get Google Gemini API key + confirm `tigergraph-mcp` repo runs locally against Savanna with a trivial query.
 - [ ] Create the repo with the agreed file structure (empty folders + stub files) so nobody blocks on scaffolding later.
 
 ---

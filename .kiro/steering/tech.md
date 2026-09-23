@@ -11,7 +11,7 @@
 ### Agent & Orchestration
 
 - **LangGraph**: State machine orchestration for investigation workflow
-- **Anthropic Claude**: LLM for synthesis, uncertainty assessment, action selection, and explanation
+- **Google Gemini**: LLM for synthesis, uncertainty assessment, action selection, and explanation
 
 ### Backend
 
@@ -95,7 +95,7 @@ gsql graph/queries/find_shared_devices.gsql
 
 ```bash
 # Install dependencies
-pip install langchain langgraph anthropic fastapi uvicorn chromadb
+pip install langchain langgraph langchain-google-genai fastapi uvicorn chromadb
 
 # Run mock action API
 uvicorn actions.api:app --reload

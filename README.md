@@ -17,7 +17,7 @@ This system implements an agentic fraud investigation workflow that:
 
 - **Graph Layer**: TigerGraph (Savanna) with GSQL queries exposing relationships.
 - **Agent Orchestration**: LangGraph state machine with 7 explicit investigation nodes.
-- **LLM**: Anthropic Claude for synthesis, uncertainty assessment, and contextual explanations.
+- **LLM**: Google Gemini for synthesis, uncertainty assessment, and contextual explanations.
 - **RAG**: Hybrid graph+vector retrieval for policy requirements and case memory.
 - **Action Layer**: Mock FastAPI endpoints for fraud actions execution.
 - **UI**: FastAPI + Vanilla JS asynchronous triggers and case browser.
@@ -28,7 +28,7 @@ This system implements an agentic fraud investigation workflow that:
 
 - Python 3.9+
 - TigerGraph Savanna account (free tier)
-- Anthropic API key (`ANTHROPIC_API_KEY`)
+- Google Gemini API key (`GOOGLE_API_KEY`)
 
 ### Installation
 
@@ -52,7 +52,7 @@ pip install -r requirements.txt
 4. Configure environment variables
 ```bash
 cp .env.example .env
-# Edit .env with your TigerGraph and Anthropic credentials
+# Edit .env with your TigerGraph and Google Gemini credentials
 ```
 
 ## Usage

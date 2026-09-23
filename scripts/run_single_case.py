@@ -58,7 +58,7 @@ def run():
         print(f"\nError running case: {e}")
         import traceback
         traceback.print_exc()
-        print("\nNote: Make sure ANTHROPIC_API_KEY is available in your environment or .env file.")
+        print("\nNote: Make sure GOOGLE_API_KEY is available in your environment or .env file.")
 
 if __name__ == "__main__":
     run()
