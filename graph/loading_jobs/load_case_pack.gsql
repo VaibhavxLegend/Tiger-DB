@@ -1,7 +1,42 @@
-// GSQL loading job for case_pack.csv
-// Phase 1: Graph Foundation
+// GSQL loading job for case_pack.csv (benchmark + closed cases)
+// Run after load_transactions to link cases to existing vertices.
 
-// TODO: CREATE LOADING JOB load_case_pack FOR GRAPH FraudInvestigation {
-//   DEFINE FILENAME case_pack_file = "data/raw/case_pack.csv";
-//   LOAD case_pack_file TO VERTEX Case ...
-// }
+USE GRAPH FraudInvestigation
+
+CREATE LOADING JOB load_case_pack FOR GRAPH FraudInvestigation {
+  DEFINE FILENAME case_file;
+
+  // Case vertex
+  LOAD case_file
+    TO VERTEX Case VALUES (
+      $"case_id",
+      $"opened_at",
+      "",               // closed_at — empty for open cases
+      "open",           // status
+      "",               // verdict — set by agent
+      0.0,              // fraud_probability
+      0.0,              // confidence
+      "",               // pattern
+      "",               // pattern_description
+      0.0,              // exposure_usd
+      0,                // n_txns
+      $"trigger_type",
+      $"trigger_text",
+      "",               // actions_taken
+      false,
+      "",               // analyst_notes
+      ""                // summary
+    ) USING header="true", separator=",";
+
+  // CASE_INVOLVES_CARD edge
+  LOAD case_file
+    TO EDGE CASE_INVOLVES_CARD VALUES (
+      $"case_id", $"card_id", true
+    ) USING header="true", separator=",";
+
+  // PART_OF_CASE edge (flagged transaction)
+  LOAD case_file
+    TO EDGE PART_OF_CASE VALUES (
+      $"flagged_txn_id", $"case_id", true, $"opened_at"
+    ) USING header="true", separator=",";
+}

@@ -1,7 +1,41 @@
-// GSQL query: Check transaction velocity patterns
-// Phase 2: GSQL Tools
+CREATE QUERY velocity_check(STRING card_id, INT time_window_minutes = 60) FOR GRAPH FraudInvestigation {
+  /*
+    Check transaction velocity for a card within the time window.
+    Returns transaction count, amounts, and pattern assessment.
+  */
+  TYPEDEF TUPLE<STRING txn_id, FLOAT amount, STRING ts, STRING channel> VRow;
+  ListAccum<VRow> @@txns;
+  SumAccum<FLOAT> @@total_amount;
+  SumAccum<INT>   @@count;
 
-// TODO: CREATE QUERY velocity_check(...) {
-//   Returns: Transaction frequency, amount patterns, time windows
-//   Pre-aggregated summary
-// }
+  card_v = {Card.*};
+  target = SELECT c FROM card_v:c WHERE c.card_id == card_id LIMIT 1;
+
+  // Transactions in window
+  recent = SELECT t FROM target:c -(<MADE_BY:e)- Transaction:t
+           WHERE t.ts >= now() - MINUTES(time_window_minutes)
+           ORDER BY t.ts DESC;
+
+  FOREACH t IN recent DO
+    @@txns += VRow(t.transaction_id, t.amount, (STRING)t.ts, t.channel);
+    @@total_amount += t.amount;
+    @@count += 1;
+  END;
+
+  // Historical average: all time vs window
+  all_txns = SELECT t2 FROM target:c -(<MADE_BY:e2)- Transaction:t2;
+  SumAccum<FLOAT> @@hist_total;
+  SumAccum<INT>   @@hist_count;
+  FOREACH t2 IN all_txns DO
+    @@hist_total += t2.amount;
+    @@hist_count += 1;
+  END;
+  FLOAT avg_per_hour = (@@hist_count > 0) ? (@@hist_count.get() / ((FLOAT)time_window_minutes / 60.0)) : 0;
+
+  PRINT card_id AS card_id;
+  PRINT time_window_minutes AS time_window_minutes;
+  PRINT @@count AS transaction_count;
+  PRINT @@txns AS transactions;
+  PRINT @@total_amount AS total_amount;
+  PRINT avg_per_hour AS typical_velocity;
+}

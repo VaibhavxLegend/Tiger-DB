@@ -8,7 +8,7 @@ If a SAR is required, write a complete narrative that stands on its own: who, wh
 
 ## User Prompt Template
 
-```
+```text
 Case: {case_id}
 
 ## Assessment

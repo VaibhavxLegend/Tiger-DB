@@ -1,7 +1,109 @@
-// GSQL loading job for transactions.csv
-// Phase 1: Graph Foundation
+// GSQL loading job for transactions.csv and identity.csv
+// Run after schema is installed: graph/schema/create_vertices.gsql + create_edges.gsql + create_graph.gsql
 
-// TODO: CREATE LOADING JOB load_transactions FOR GRAPH FraudInvestigation {
-//   DEFINE FILENAME transactions_file = "data/raw/transactions.csv";
-//   LOAD transactions_file TO VERTEX Transaction ...
-// }
+USE GRAPH FraudInvestigation
+
+// ──────────────────────────────────────────────
+// Loading job: transactions.csv
+// Columns (IEEE-CIS dataset):
+//   TransactionID, isFraud, TransactionDT, TransactionAmt, ProductCD,
+//   card1, card2, card3, card4, card5, card6,
+//   addr1, addr2, dist1, dist2,
+//   P_emaildomain, R_emaildomain,
+//   C1..C14, D1..D15, M1..M9, V1..V339
+// ──────────────────────────────────────────────
+CREATE LOADING JOB load_transactions FOR GRAPH FraudInvestigation {
+  DEFINE FILENAME txn_file;
+
+  // Transaction vertex
+  LOAD txn_file
+    TO VERTEX Transaction VALUES (
+      $"TransactionID",       // transaction_id (PRIMARY_ID)
+      $"TransactionDT",       // transaction_dt
+      "",                     // ts — computed post-load if base epoch known
+      $"TransactionAmt",      // amount
+      $"ProductCD",           // product_cd
+      "online",               // channel default
+      0.0,                    // risk_score (filled by model output)
+      $"addr1",
+      $"addr2",
+      $"dist1",
+      $"dist2",
+      $"P_emaildomain",
+      $"R_emaildomain",
+      "",                     // c_features JSON — loaded separately if needed
+      "",                     // d_features
+      "",                     // m_features
+      ""                      // v_features
+    ) USING header="true", separator=",";
+
+  // Card vertex (de-duped by card1 as surrogate key)
+  LOAD txn_file
+    TO VERTEX Card VALUES (
+      $"card1",               // PRIMARY_ID (card1 used as card_id)
+      "",                     // customer_id — joined from case_pack later
+      $"card4",               // card_network
+      $"card6",               // card_type
+      $"card1",
+      $"card2",
+      $"card3",
+      $"card5",
+      ""
+    ) USING header="true", separator=",";
+
+  // MADE_BY edge: Transaction → Card
+  LOAD txn_file
+    TO EDGE MADE_BY VALUES (
+      $"TransactionID",       // FROM Transaction
+      $"card1"                // TO Card
+    ) USING header="true", separator=",";
+
+  // EmailDomain vertices
+  LOAD txn_file
+    TO VERTEX EmailDomain VALUES ($"P_emaildomain")
+    USING header="true", separator=",";
+
+  LOAD txn_file
+    TO VERTEX EmailDomain VALUES ($"R_emaildomain")
+    USING header="true", separator=",";
+
+  // USES_P_EMAIL edge
+  LOAD txn_file
+    TO EDGE USES_P_EMAIL VALUES (
+      $"TransactionID", $"P_emaildomain", "", "purchaser"
+    ) USING header="true", separator=",";
+
+  // USES_R_EMAIL edge
+  LOAD txn_file
+    TO EDGE USES_R_EMAIL VALUES (
+      $"TransactionID", $"R_emaildomain", "", "recipient"
+    ) USING header="true", separator=",";
+}
+
+// ──────────────────────────────────────────────
+// Loading job: identity.csv
+// Columns: TransactionID, DeviceType, DeviceInfo, id_01..id_38
+// ──────────────────────────────────────────────
+CREATE LOADING JOB load_identity FOR GRAPH FraudInvestigation {
+  DEFINE FILENAME id_file;
+
+  LOAD id_file
+    TO VERTEX Device VALUES (
+      $"TransactionID",       // device_id = TransactionID (1-to-1 in dataset)
+      $"DeviceType",
+      $"DeviceInfo",
+      $"id_30",               // os
+      $"id_31",               // browser
+      $"id_33",               // screen
+      $"id_15",               // device_new_found
+      $"id_23",               // proxy_type
+      ""                      // id_features JSON
+    ) USING header="true", separator=",";
+
+  LOAD id_file
+    TO EDGE USES_DEVICE VALUES (
+      $"TransactionID",       // FROM Transaction
+      $"TransactionID",       // TO Device (same surrogate)
+      ""                      // ts
+    ) USING header="true", separator=",";
+}

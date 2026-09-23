@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-23T15:24:13.893994",
+  "timestamp": "2026-09-23T19:35:56.631854",
   "total_cases": 20,
   "successful": 20,
   "failed": 0,
@@ -7,102 +7,102 @@
     {
       "case_id": "HHG-001",
       "status": "success",
-      "latency": 0.002647876739501953
+      "latency": 0.0038509368896484375
     },
     {
       "case_id": "HHG-002",
       "status": "success",
-      "latency": 0.0012619495391845703
+      "latency": 0.0012669563293457031
     },
     {
       "case_id": "HHG-003",
       "status": "success",
-      "latency": 0.0013210773468017578
+      "latency": 0.0011949539184570312
     },
     {
       "case_id": "HHG-004",
       "status": "success",
-      "latency": 0.0012390613555908203
+      "latency": 0.0011959075927734375
     },
     {
       "case_id": "HHG-005",
       "status": "success",
-      "latency": 0.002385854721069336
+      "latency": 0.0012390613555908203
     },
     {
       "case_id": "HHG-006",
       "status": "success",
-      "latency": 0.001232147216796875
+      "latency": 0.001325845718383789
     },
     {
       "case_id": "HHG-007",
       "status": "success",
-      "latency": 0.00234222412109375
+      "latency": 0.0012989044189453125
     },
     {
       "case_id": "HHG-008",
       "status": "success",
-      "latency": 0.0012271404266357422
+      "latency": 0.0012018680572509766
     },
     {
       "case_id": "HHG-009",
       "status": "success",
-      "latency": 0.001299142837524414
+      "latency": 0.0012123584747314453
     },
     {
       "case_id": "HHG-010",
       "status": "success",
-      "latency": 0.0012009143829345703
+      "latency": 0.0011668205261230469
     },
     {
       "case_id": "HHG-011",
       "status": "success",
-      "latency": 0.002310037612915039
+      "latency": 0.0011568069458007812
     },
     {
       "case_id": "HHG-012",
       "status": "success",
-      "latency": 0.0011899471282958984
+      "latency": 0.0011739730834960938
     },
     {
       "case_id": "HHG-013",
       "status": "success",
-      "latency": 0.0012140274047851562
+      "latency": 0.0011630058288574219
     },
     {
       "case_id": "HHG-014",
       "status": "success",
-      "latency": 0.0011968612670898438
+      "latency": 0.0011887550354003906
     },
     {
       "case_id": "HHG-015",
       "status": "success",
-      "latency": 0.002335071563720703
+      "latency": 0.002418994903564453
     },
     {
       "case_id": "HHG-016",
       "status": "success",
-      "latency": 0.0011832714080810547
+      "latency": 0.0012018680572509766
     },
     {
       "case_id": "HHG-017",
       "status": "success",
-      "latency": 0.0023250579833984375
+      "latency": 0.0011637210845947266
     },
     {
       "case_id": "HHG-018",
       "status": "success",
-      "latency": 0.0011889934539794922
+      "latency": 0.00115203857421875
     },
     {
       "case_id": "HHG-019",
       "status": "success",
-      "latency": 0.00232696533203125
+      "latency": 0.001149892807006836
     },
     {
       "case_id": "HHG-020",
       "status": "success",
-      "latency": 0.00232696533203125
+      "latency": 0.0011439323425292969
     }
   ]
 }

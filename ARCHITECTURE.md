@@ -2,96 +2,202 @@
 
 ```mermaid
 graph TD
-    %% Core Components
-    subgraph UI["User Interface"]
-        UI_Dashboard[Dashboard: http://localhost:8080]
-        UI_Case_Browser[Case Browser & Trigger]
+
+    %% =========================================================
+    %% USER INTERFACE
+    %% =========================================================
+    subgraph UI["🖥️ USER INTERFACE"]
+        direction TB
+        UI_Dashboard["📊 Dashboard<br/><small>localhost:8080</small>"]
+        UI_Case_Browser["🔎 Case Browser<br/>& Trigger"]
     end
 
-    subgraph Agent["Agent Orchestration (LangGraph)"]
-        Trigger[trigger_node] --> Investigate[investigate_node]
-        Investigate --> Assess[assess_uncertainty_node]
-        Assess -->|uncertain & iter<3| Gather[gather_more_evidence_node]
+
+    %% =========================================================
+    %% AGENT ORCHESTRATION
+    %% =========================================================
+    subgraph Agent["🤖 AGENT ORCHESTRATION · LANGGRAPH"]
+        direction LR
+
+        Trigger(["⚡ trigger_node"])
+        Investigate(["🔍 investigate_node"])
+        Assess{"❓ assess_uncertainty_node"}
+        Gather(["📚 gather_more_evidence_node"])
+        Recommend(["🎯 recommend_action_node"])
+        Explain(["💡 explain_node"])
+        Update(["🧠 update_memory_node"])
+        End(["✓ END"])
+
+        Trigger --> Investigate
+        Investigate --> Assess
+
+        Assess -->|"Uncertain<br/>& iter < 3"| Gather
         Gather --> Assess
-        Assess -->|sufficient| Recommend[recommend_action_node]
-        Recommend --> Explain[explain_node]
-        Explain --> Update[update_memory_node]
-        Update --> End[end]
+
+        Assess -->|"Sufficient"| Recommend
+        Recommend --> Explain
+        Explain --> Update
+        Update --> End
     end
 
-    subgraph Memory["Case Memory & RAG"]
-        RAG[rag/retriever.py]
-        Similar[Similar Case Retrieval]
-        Policy[Policy Context Retrieval]
-        Embed[case_memory_embed.py]
+
+    %% =========================================================
+    %% MEMORY & RAG
+    %% =========================================================
+    subgraph Memory["🧠 CASE MEMORY & RAG"]
+        direction TB
+
+        RAG["🔗 RAG Retriever<br/><small>rag/retriever.py</small>"]
+        Similar["🔎 Similar Case<br/>Retrieval"]
+        Policy["📜 Policy Context<br/>Retrieval"]
+        Embed["🧬 Case Memory<br/>Embeddings"]
     end
 
-    subgraph Graph["Graph Layer (MCP Server)"]
-        MCP[mcp_server/server.py]
-        TxN[get_txn_neighborhood]
-        Dev[find_shared_devices]
-        Vel[velocity_check]
-        Sim[get_similar_past_cases]
+
+    %% =========================================================
+    %% GRAPH / MCP
+    %% =========================================================
+    subgraph Graph["🕸️ GRAPH INTELLIGENCE · MCP SERVER"]
+        direction TB
+
+        MCP["🔌 MCP Server<br/><small>mcp_server/server.py</small>"]
+
+        TxN["🧩 Transaction<br/>Neighborhood"]
+        Dev["🔗 Shared Device<br/>Detection"]
+        Vel["⚡ Velocity<br/>Check"]
+        Sim["🔎 Similar Past<br/>Cases"]
+
+        MCP --> TxN
+        MCP --> Dev
+        MCP --> Vel
+        MCP --> Sim
     end
 
-    subgraph Actions["Action Layer"]
-        Policy_Engine[agent/policy_engine.py]
-        Executor[actions/executor.py]
-        Mock[actions/mock_responses.py]
+
+    %% =========================================================
+    %% ACTION LAYER
+    %% =========================================================
+    subgraph Actions["⚙️ ACTION & DECISION LAYER"]
+        direction TB
+
+        Policy_Engine["🛡️ Policy Engine<br/><small>agent/policy_engine.py</small>"]
+        Executor["🚀 Action Executor<br/><small>actions/executor.py</small>"]
+        Mock["🧪 Mock Responses<br/><small>actions/mock_responses.py</small>"]
+
+        Policy_Engine --> Executor
+        Executor --> Mock
     end
 
-    %% Data Stores
-    TigerGraph[TigerGraph Database]
-    VectorDB[Vector Store]
-    Case_Storage[(cases/ JSON outputs)]
 
-    %% Connections
-    UI_Dashboard -->|HTTP| Trigger
-    UI_Case_Browser -->|HTTP| Trigger
+    %% =========================================================
+    %% DATA STORES
+    %% =========================================================
+    TigerGraph[("🗄️ TigerGraph<br/>Database")]
+    VectorDB[("🔮 Vector Store")]
+    Case_Storage[("📁 Case Storage<br/>JSON Outputs")]
 
-    Trigger -->|Case ID| Investigate
-    Investigate -->|Tool Calls| MCP
 
-    MCP --> TxN
-    MCP --> Dev
-    MCP --> Vel
-    MCP --> Sim
+    %% =========================================================
+    %% UI → AGENT
+    %% =========================================================
+    UI_Dashboard -->|"HTTP"| Trigger
+    UI_Case_Browser -->|"HTTP"| Trigger
+
+
+    %% =========================================================
+    %% AGENT → GRAPH
+    %% =========================================================
+    Investigate -->|"Tool Calls"| MCP
 
     TxN --> TigerGraph
     Dev --> TigerGraph
     Vel --> TigerGraph
     Sim --> TigerGraph
 
+
+    %% =========================================================
+    %% GRAPH → MEMORY
+    %% =========================================================
     Sim --> Similar
     Similar --> VectorDB
     Policy --> VectorDB
+    Embed --> VectorDB
 
-    Assess -->|Entities, Pattern| RAG
+
+    %% =========================================================
+    %% AGENT → RAG
+    %% =========================================================
+    Assess -->|"Entities + Pattern"| RAG
     RAG --> Similar
     RAG --> Policy
 
+
+    %% =========================================================
+    %% DECISION → ACTION
+    %% =========================================================
     Recommend --> Policy_Engine
-    Policy_Engine --> Executor
-    Executor --> Mock
 
+
+    %% =========================================================
+    %% EXPLANATION / MEMORY
+    %% =========================================================
     Explain --> Case_Storage
-    Update --> TigerGraph
+    Update -->|"Persist Case Knowledge"| TigerGraph
 
-    %% Styling
-    classDef component fill:#f9f9f9,stroke:#333,stroke-width:1px;
-    classDef database fill:#e3f2fd,stroke:#1976d2,stroke-width:2px;
-    classDef ui fill:#fff3e0,stroke:#ef6c00,stroke-width:1px;
-    classDef agent fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px;
-    classDef memory fill:#f3e5f5,stroke:#6a1b9a,stroke-width:1px;
-    classDef graphA fill:#e0f7fa,stroke:#006064,stroke-width:1px;
-    classDef actions fill:#ffebee,stroke:#c62828,stroke-width:1px;
 
+    %% =========================================================
+    %% STYLING
+    %% =========================================================
+
+    %% UI
+    classDef ui fill:#E8F1FF,stroke:#2563EB,color:#172554,stroke-width:2px;
+
+    %% Agent
+    classDef agent fill:#EAF8F0,stroke:#16A34A,color:#14532D,stroke-width:2px;
+
+    %% Decision
+    classDef decision fill:#FFF7D6,stroke:#D97706,color:#78350F,stroke-width:2px;
+
+    %% Memory
+    classDef memory fill:#F3E8FF,stroke:#9333EA,color:#581C87,stroke-width:2px;
+
+    %% Graph
+    classDef Graph fill:#E6FFFB,stroke:#0891B2,color:#164E63,stroke-width:2px;
+
+    %% Actions
+    classDef action fill:#FFF0F0,stroke:#DC2626,color:#7F1D1D,stroke-width:2px;
+
+    %% Database
+    classDef database fill:#EEF2F7,stroke:#475569,color:#0F172A,stroke-width:2px;
+
+    %% End
+    classDef endA fill:#DCFCE7,stroke:#15803D,color:#14532D,stroke-width:2px;
+
+    %% Apply classes
     class UI_Dashboard,UI_Case_Browser ui;
-    class Trigger,Investigate,Assess,Gather,Recommend,Explain,Update component;
+
+    class Trigger,Investigate,Gather,Recommend,Explain,Update agent;
+    class Assess decision;
+    class End endA;
+
     class RAG,Similar,Policy,Embed memory;
-    class MCP,TxN,Dev,Vel,Sim graphA;
-    class Policy_Engine,Executor,Mock actions;
-    class TigerGraph,VectorDB database;
+
+    class MCP,TxN,Dev,Vel,Sim Graph;
+
+    class Policy_Engine,Executor,Mock action;
+
+    class TigerGraph,VectorDB,Case_Storage database;
+
+
+    %% =========================================================
+    %% SUBGRAPH STYLING
+    %% =========================================================
+
+    style UI fill:#F8FBFF,stroke:#2563EB,stroke-width:2px
+    style Agent fill:#F7FCF8,stroke:#16A34A,stroke-width:2px
+    style Memory fill:#FCF8FF,stroke:#9333EA,stroke-width:2px
+    style Graph fill:#F4FEFF,stroke:#0891B2,stroke-width:2px
+    style Actions fill:#FFF8F8,stroke:#DC2626,stroke-width:2px
 ```
 
 ## Component Descriptions

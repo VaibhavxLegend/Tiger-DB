@@ -5,8 +5,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 from agent.state import CaseState, EvidenceRequest, Evidence
 from agent.schemas.evidence_request import EvidenceRequestOutput
+from agent.llm_util import get_structured_llm
 from rag.retriever import retrieve_policy_context_for_case
-from anthropic import Anthropic
 from dotenv import load_dotenv
 import json
 
@@ -86,7 +86,51 @@ IMPORTANT:
 - Step-up auth for card testing patterns
 - Analyst info for complex/conflicting evidence"""
 
-    # Deterministic evidence type selection
+    # Try LLM-based evidence selection first, fall back to rules
+    use_llm = bool(os.getenv("GOOGLE_API_KEY"))
+    if use_llm:
+        print("  - Running LLM-based evidence selection (Gemini)...")
+        try:
+            llm = get_structured_llm(EvidenceRequestOutput, model_name="gemini-1.5-flash", temperature=0.0)
+            response = llm.invoke(prompt)
+            selection = response.parsed if hasattr(response, "parsed") else response
+
+            ev_type = selection.evidence_type
+            simulated = selection.simulated_response
+
+            request = EvidenceRequest(
+                type=ev_type,
+                asked_after_step=state.iteration_count,
+                assumed_response=simulated
+            )
+            state.evidence_requests.append(request)
+
+            source = "customer" if ev_type == "customer_validation" else "external"
+            state.evidence.append(Evidence(
+                claim=f"{ev_type}: {simulated}",
+                source=source,
+                ref=f"evidence_request:{len(state.evidence_requests)}",
+                entity_ids=[state.customer_id]
+            ))
+
+            print(f"  ✓ Evidence request created:")
+            print(f"    - Type: {ev_type}")
+            print(f"    - Justification: {selection.justification[:80] if selection.justification else ''}...")
+
+            state.log_transition("gather_more_evidence", {
+                "iteration": state.iteration_count,
+                "requests_count": len(state.evidence_requests),
+                "evidence_count": len(state.evidence),
+                "llm_used": True
+            })
+            state.iteration_count += 1
+            state.status = "gathering_evidence"
+            return state
+
+        except Exception as e:
+            print(f"  - LLM evidence selection failed ({e}), falling back to rules")
+
+    # Deterministic evidence type selection (fallback)
     print("  - Selecting evidence type (rule-based)...")
 
     pattern = state.pattern or "none"

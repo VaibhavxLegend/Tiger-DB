@@ -1,6 +1,6 @@
 # Fraud Policy
 
-**Version 1.0**
+## Version 1.0
 
 This is the authoritative policy the agent operates under. Source: data/raw/README.md Section "Fraud Policy"
 
@@ -14,22 +14,22 @@ Every transaction carries a `risk_score` between 0 and 1 from the bank's detecti
 
 ## 1. Actions Taxonomy
 
-| Action | What it does | Customer impact |
-|---|---|---|
-| `ALLOW_TRANSACTION` | Let the flagged transaction stand | None |
-| `DECLINE_TRANSACTION` | Decline the flagged authorization only. Card stays active | Low |
-| `MONITOR_CARD` | Card stays active; raise monitoring sensitivity for 72 hours | None |
-| `MONITOR_CONNECTED_CARDS` | Put other cards linked to the same device profile, region cluster, or ring under monitoring | None |
-| `WARN_CUSTOMER` | Send an informational message (e.g. a recurring charge reminder, a security tip) | None |
-| `VERIFY_WITH_CUSTOMER` | Ask the cardholder whether they made the transaction. Card stays active pending reply | Low |
-| `STEP_UP_AUTH` | Require a one-time passcode or app confirmation before further activity | Low |
-| `BLOCK_CARD` | Block this card and reissue | High |
-| `BLOCK_ALL_CARDS` | Block every card the customer holds | Very high |
-| `GENERATE_REPORT` | Write up the investigation for the internal record, without opening a case | None |
-| `CREATE_CASE` | Open an internal fraud case with the evidence attached, and write it to the graph | None |
-| `FILE_REPORT` | File a suspicious activity report with the regulator | None |
-| `ESCALATE_TO_ANALYST` | Hand the case to a human analyst with the evidence | None |
-| `CLOSE_NO_FRAUD` | Close the alert as legitimate | None |
+| Action                    | What it does                                                                                | Customer impact |
+| ------------------------- | ------------------------------------------------------------------------------------------- | --------------- |
+| `ALLOW_TRANSACTION`       | Let the flagged transaction stand                                                           | None            |
+| `DECLINE_TRANSACTION`     | Decline the flagged authorization only. Card stays active                                   | Low             |
+| `MONITOR_CARD`            | Card stays active; raise monitoring sensitivity for 72 hours                                | None            |
+| `MONITOR_CONNECTED_CARDS` | Put other cards linked to the same device profile, region cluster, or ring under monitoring | None            |
+| `WARN_CUSTOMER`           | Send an informational message (e.g. a recurring charge reminder, a security tip)            | None            |
+| `VERIFY_WITH_CUSTOMER`    | Ask the cardholder whether they made the transaction. Card stays active pending reply       | Low             |
+| `STEP_UP_AUTH`            | Require a one-time passcode or app confirmation before further activity                     | Low             |
+| `BLOCK_CARD`              | Block this card and reissue                                                                 | High            |
+| `BLOCK_ALL_CARDS`         | Block every card the customer holds                                                         | Very high       |
+| `GENERATE_REPORT`         | Write up the investigation for the internal record, without opening a case                  | None            |
+| `CREATE_CASE`             | Open an internal fraud case with the evidence attached, and write it to the graph           | None            |
+| `FILE_REPORT`             | File a suspicious activity report with the regulator                                        | None            |
+| `ESCALATE_TO_ANALYST`     | Hand the case to a human analyst with the evidence                                          | None            |
+| `CLOSE_NO_FRAUD`          | Close the alert as legitimate                                                               | None            |
 
 An agent may recommend several actions for one case. Order them by what happens first.
 
@@ -37,11 +37,11 @@ An agent may recommend several actions for one case. Order them by what happens 
 
 ## 2. Approval Routing
 
-| Route | Applies to |
-|---|---|
-| `auto` | `ALLOW_TRANSACTION`, `MONITOR_CARD`, `MONITOR_CONNECTED_CARDS`, `WARN_CUSTOMER`, `VERIFY_WITH_CUSTOMER`, `STEP_UP_AUTH`, `GENERATE_REPORT`, `CREATE_CASE`, `ESCALATE_TO_ANALYST`, `CLOSE_NO_FRAUD` |
-| `L1` (team lead) | `DECLINE_TRANSACTION`; `BLOCK_CARD` when exposure ≤ $2,500 |
-| `L2` (fraud manager) | `BLOCK_CARD` when exposure > $2,500; `BLOCK_ALL_CARDS` always; `FILE_REPORT` always |
+| Route                | Applies to                                                                                                                                                                                         |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auto`               | `ALLOW_TRANSACTION`, `MONITOR_CARD`, `MONITOR_CONNECTED_CARDS`, `WARN_CUSTOMER`, `VERIFY_WITH_CUSTOMER`, `STEP_UP_AUTH`, `GENERATE_REPORT`, `CREATE_CASE`, `ESCALATE_TO_ANALYST`, `CLOSE_NO_FRAUD` |
+| `L1` (team lead)     | `DECLINE_TRANSACTION`; `BLOCK_CARD` when exposure ≤ $2,500                                                                                                                                         |
+| `L2` (fraud manager) | `BLOCK_CARD` when exposure > $2,500; `BLOCK_ALL_CARDS` always; `FILE_REPORT` always                                                                                                                |
 
 The agent recommends. Only `auto` actions may be executed by the agent. `L1` and `L2` actions are recommended with the route stated and wait for a human.
 
@@ -98,6 +98,7 @@ Two different things, and the agent produces both.
 ### A Case (`CREATE_CASE`)
 
 The bank's internal record of an investigation. Open one whenever:
+
 - Fraud probability reaches 0.30, OR
 - You request evidence, OR
 - A customer disputes a charge
@@ -107,6 +108,7 @@ A case can be closed as fraud or as legitimate. It can be updated when new evide
 ### A Suspicious Activity Report (`FILE_REPORT`)
 
 A regulatory filing sent outside the bank. File one when fraud is confirmed or strongly suspected **AND** at least one of these holds:
+
 - Exposure exceeds $1,000
 - The activity connects to a shared device profile, a shared region cluster, or another customer's fraud
 - The pattern is coordinated or undocumented (rule R9)
@@ -142,6 +144,7 @@ The agent may, without approval, ask the customer to validate a transaction, req
 ## 6. Stopping
 
 Stop investigating when one of these holds:
+
 - Fraud probability is at or above 0.85, or at or below 0.15, supported by at least two independent pieces of evidence
 - A verification response settles the question
 - Further steps are unlikely to change the decision. Say so in `stop_reason`
@@ -161,6 +164,7 @@ Every recommendation must state what evidence was used, why more evidence was re
 ### Approval Route Log Points (CRITICAL)
 
 The agent MUST log approval routing at TWO points:
+
 1. **BEFORE** any additional evidence is requested
 2. **AFTER** evidence is received / before the final action is taken
 
@@ -173,6 +177,7 @@ Implement as a **deterministic module** (not LLM). Given an action name and expo
 ### SAR Determination
 
 Implement `should_file_sar()` as a deterministic function checking:
+
 - Fraud probability > 0.7 (strongly suspected), AND
 - (Exposure > $1,000 OR shared device/region OR coordinated pattern)
 

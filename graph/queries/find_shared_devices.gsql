@@ -1,7 +1,40 @@
-// GSQL query: Find cards sharing the same device
-// Phase 2: GSQL Tools
+CREATE QUERY find_shared_devices(STRING card_id, INT time_window_hours = 24) FOR GRAPH FraudInvestigation {
+  /*
+    Find all cards that share a device with the target card
+    within the given time window.
+  */
+  ListAccum<STRING> @@shared_card_ids;
+  SetAccum<STRING>  @@case_ids;
 
-// TODO: CREATE QUERY find_shared_devices(...) {
-//   Returns: Device clusters, cards using same device, time windows
-//   Pre-aggregated summary
-// }
+  // Get all transactions for this card
+  card_v = {Card.*};
+  target_card = SELECT c FROM card_v:c WHERE c.card_id == card_id LIMIT 1;
+
+  // Get devices used by these transactions
+  devices = SELECT d FROM target_card:c -(<MADE_BY:e1)- Transaction:t -(USES_DEVICE:e2)-> Device:d;
+
+  // Find other cards that used the same device
+  other_txns = SELECT t2 FROM devices:d -(<USES_DEVICE:e3)- Transaction:t2
+               WHERE t2.ts >= now() - HOURS(time_window_hours);
+
+  other_cards = SELECT c2 FROM other_txns:t2 -(MADE_BY:e4)-> Card:c2
+                WHERE c2.card_id != card_id;
+
+  FOREACH c2 IN other_cards DO
+    @@shared_card_ids += c2.card_id;
+  END;
+
+  // Find linked closed cases
+  linked_cases = SELECT ca FROM other_cards:c2 -(<CASE_INVOLVES_CARD:e5)- Case:ca
+                 WHERE ca.status IN ("closed_fraud", "closed_legitimate");
+
+  FOREACH ca IN linked_cases DO
+    @@case_ids += ca.case_id;
+  END;
+
+  PRINT devices[devices.device_id, devices.device_type, devices.device_info,
+                devices.os, devices.browser] AS device;
+  PRINT @@shared_card_ids AS shared_card_ids;
+  PRINT @@case_ids AS linked_case_ids;
+  PRINT time_window_hours AS time_window_hours;
+}

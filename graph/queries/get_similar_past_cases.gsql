@@ -1,7 +1,66 @@
-// GSQL query: Retrieve similar past cases from closed_cases_history
-// Phase 2: GSQL Tools
+CREATE QUERY get_similar_past_cases(STRING pattern, STRING device_id, STRING card_id, INT limit_n = 10) FOR GRAPH FraudInvestigation {
+  /*
+    Retrieve closed cases that match the given pattern,
+    or are connected to the same device/card via graph edges.
+  */
+  TYPEDEF TUPLE<STRING case_id, STRING status, STRING verdict, FLOAT fraud_probability,
+                STRING pattern_name, FLOAT exposure, INT n_txns, STRING actions_taken,
+                BOOL report_filed, STRING analyst_notes, FLOAT similarity_score> CaseRow;
+  ListAccum<CaseRow> @@cases;
+  SetAccum<STRING>   @@seen;
 
-// TODO: CREATE QUERY get_similar_past_cases(...) {
-//   Returns: Closed cases with similar patterns, entities, outcomes
-//   Pre-aggregated summary
-// }
+  all_cases = {Case.*};
+
+  // Pattern match
+  matched = SELECT ca FROM all_cases:ca
+            WHERE ca.pattern == pattern AND ca.status IN ("closed_fraud", "closed_legitimate")
+            ORDER BY ca.closed_at DESC
+            LIMIT limit_n;
+
+  FOREACH ca IN matched DO
+    IF NOT @@seen.contains(ca.case_id) THEN
+      @@cases += CaseRow(ca.case_id, ca.status, ca.verdict, ca.fraud_probability,
+                         ca.pattern, ca.exposure_usd, ca.n_txns, ca.actions_taken,
+                         ca.report_filed, ca.analyst_notes, 0.9);
+      @@seen += ca.case_id;
+    END;
+  END;
+
+  // Device-connected cases
+  IF device_id != "" THEN
+    dev_v = {Device.*};
+    target_dev = SELECT d FROM dev_v:d WHERE d.device_id == device_id LIMIT 1;
+    dev_txns = SELECT t FROM target_dev:d -(<USES_DEVICE:e)- Transaction:t;
+    dev_cases = SELECT ca2 FROM dev_txns:t -(PART_OF_CASE:e2)-> Case:ca2
+                WHERE ca2.status IN ("closed_fraud", "closed_legitimate")
+                LIMIT limit_n;
+    FOREACH ca2 IN dev_cases DO
+      IF NOT @@seen.contains(ca2.case_id) THEN
+        @@cases += CaseRow(ca2.case_id, ca2.status, ca2.verdict, ca2.fraud_probability,
+                           ca2.pattern, ca2.exposure_usd, ca2.n_txns, ca2.actions_taken,
+                           ca2.report_filed, ca2.analyst_notes, 0.75);
+        @@seen += ca2.case_id;
+      END;
+    END;
+  END;
+
+  // Card-connected cases
+  IF card_id != "" THEN
+    card_v = {Card.*};
+    target_card = SELECT c FROM card_v:c WHERE c.card_id == card_id LIMIT 1;
+    card_cases = SELECT ca3 FROM target_card:c -(<CASE_INVOLVES_CARD:e3)- Case:ca3
+                 WHERE ca3.status IN ("closed_fraud", "closed_legitimate")
+                 LIMIT limit_n;
+    FOREACH ca3 IN card_cases DO
+      IF NOT @@seen.contains(ca3.case_id) THEN
+        @@cases += CaseRow(ca3.case_id, ca3.status, ca3.verdict, ca3.fraud_probability,
+                           ca3.pattern, ca3.exposure_usd, ca3.n_txns, ca3.actions_taken,
+                           ca3.report_filed, ca3.analyst_notes, 0.6);
+        @@seen += ca3.case_id;
+      END;
+    END;
+  END;
+
+  PRINT @@cases AS cases;
+  PRINT @@seen.size() AS total_returned;
+}

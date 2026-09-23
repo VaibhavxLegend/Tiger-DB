@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 from agent.state import CaseState
 from agent.schemas.explanation import ExplanationOutput
-from anthropic import Anthropic
+from agent.llm_util import get_structured_llm
 from dotenv import load_dotenv
 import json
 
@@ -84,7 +84,38 @@ IMPORTANT:
 - All explanations must cite evidence refs (e.g., 'Evidence #1', 'query:get_txn_neighborhood')
 - Action justification must reference policy rules"""
 
-    # Template-based explanation (no LLM required)
+    # Try LLM-based explanation first, fall back to template-based approach
+    use_llm = bool(os.getenv("GOOGLE_API_KEY")) and state.final_actions
+    if use_llm:
+        print("  - Running LLM-based explanation (Gemini)...")
+        try:
+            llm = get_structured_llm(ExplanationOutput, model_name="gemini-1.5-flash", temperature=0.0)
+            response = llm.invoke(prompt)
+            explanation = response.parsed if hasattr(response, "parsed") else response
+
+            state.explanation_summary = explanation.summary
+            state.sar_narrative = explanation.sar_narrative
+            state.sar_subjects = explanation.sar_subjects
+            state.evidence_explanation = explanation.evidence_explanation
+            state.uncertainty_explanation = explanation.uncertainty_explanation
+            state.action_justification = explanation.action_justification
+
+            print(f"  ✓ LLM Explanation generated:")
+            print(f"    - Summary: {state.explanation_summary[:100]}...")
+            print(f"    - SAR required: {bool(state.sar_narrative)}")
+
+            state.log_transition("explain", {
+                "explanation_generated": True,
+                "sar_required": bool(state.sar_narrative),
+                "summary_length": len(state.explanation_summary),
+                "llm_used": True
+            })
+            return state
+
+        except Exception as e:
+            print(f"  - LLM explanation failed ({e}), falling back to template")
+
+    # Template-based explanation (fallback)
     print("  - Generating rule-based explanation...")
 
     pattern = state.pattern or "none"
@@ -92,7 +123,6 @@ IMPORTANT:
     prob = state.fraud_probability or 0.5
     ev_refs = ", ".join([f"Evidence #{i+1}" for i in range(min(len(state.evidence), 4))])
     actions_text = ", ".join([a.action for a in state.final_actions]) if state.final_actions else "no actions"
-    final_actions = [a if isinstance(a, dict) else a.model_dump() for a in state.final_actions] if state.final_actions else []
     action_names = [a.get("action", "") if isinstance(a, dict) else a.action for a in state.final_actions] if state.final_actions else []
 
     state.explanation_summary = (

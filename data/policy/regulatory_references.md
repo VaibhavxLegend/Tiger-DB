@@ -7,18 +7,21 @@ Source: data/raw/README.md - Public documents from US and international regulato
 ### SAR Filing Requirements
 
 **Key Resources**:
+
 - SAR Filing FAQs (October 2025)
 - SAR Narrative Guidance - Standard for writing `sar.narrative`
 - Preparing a Complete and Sufficient SAR Narrative
 - SAR Supporting Documentation (FIN-2007-G003)
 
 **Filing Thresholds**:
+
 - Confirmed or strongly suspected fraud
 - Exposure exceeds $1,000, OR
 - Shared device/region links multiple victims, OR
 - Coordinated/undocumented pattern
 
 **Narrative Requirements** (Who, What, When, Where, How, Why):
+
 - **Who**: Customer IDs, card IDs, merchants, devices involved
 - **What**: Specific transactions and amounts
 - **When**: Activity dates (first to last)
@@ -29,6 +32,7 @@ Source: data/raw/README.md - Public documents from US and international regulato
 ### Red Flags
 
 **SAR Activity Review - Trends, Tips, and Issues**:
+
 - Multiple small authorizations (testing)
 - Burst activity inconsistent with history
 - Shared device profiles across unrelated accounts
@@ -38,6 +42,7 @@ Source: data/raw/README.md - Public documents from US and international regulato
 ### Account Takeover
 
 **Advisory on Account Takeover Activity (FIN-2011-A016)**:
+
 - Credential compromise indicators
 - Mixed-channel anomalies
 - Device and match-flag mismatches
@@ -45,6 +50,7 @@ Source: data/raw/README.md - Public documents from US and international regulato
 ### Identity-Related Fraud
 
 **Identity-Related Suspicious Activity (2021)**:
+
 - Device fingerprinting
 - Email domain patterns
 - Identity record anomalies
@@ -56,6 +62,7 @@ Source: data/raw/README.md - Public documents from US and international regulato
 ### Cyber-Enabled Fraud
 
 **Illicit Financial Flows from Cyber-Enabled Fraud**:
+
 - Card-not-present patterns
 - Device-based fraud rings
 - Cross-border coordination
@@ -63,6 +70,7 @@ Source: data/raw/README.md - Public documents from US and international regulato
 ### Money Laundering Methods
 
 **Money Laundering Using New Payment Methods**:
+
 - How stolen card proceeds are laundered
 - Payment method risk indicators
 
@@ -73,11 +81,13 @@ Source: data/raw/README.md - Public documents from US and international regulato
 ### Red Flags for Suspicious Activity
 
 **Money Laundering and Terrorist Financing Red Flags**:
+
 - Transaction patterns inconsistent with customer profile
 - Shared attributes across multiple accounts
 - Velocity anomalies
 
 **Suspicious Activity Reporting Guidelines**:
+
 - When to file
 - What to include
 - Supporting documentation requirements
@@ -105,6 +115,7 @@ Source: data/raw/README.md - Public documents from US and international regulato
 ## Implementation Note
 
 Load these documents into the vector store (rag/policy_ingest.py) for retrieval during:
+
 - SAR requirement determination (should_file_sar)
 - SAR narrative generation (explain node)
 - Policy compliance checks (recommend_action node)

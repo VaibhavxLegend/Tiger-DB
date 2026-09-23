@@ -6,9 +6,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 from agent.state import CaseState
 from agent.schemas.assessment import AssessmentOutput
 from rag.retriever import retrieve_similar_cases, retrieve_policy_context_for_case
-from anthropic import Anthropic
 from dotenv import load_dotenv
 import json
+from agent.llm_util import get_structured_llm
+from agent.schemas.assessment import AssessmentOutput
 
 # Load environment
 load_dotenv()
@@ -111,10 +112,53 @@ Return ONLY a valid JSON object matching this schema:
   "exposure_usd": 0.0
 }}
 
-IMPORTANT: 
+IMPORTANT:
 - Only cite evidence numbers that exist in the Evidence Gathered section
 - Be conservative: if confidence < 0.6, set sufficient_evidence to false
 - Pattern "undocumented" requires pattern_description explaining what you found"""
+
+    # Try LLM-based assessment first, fall back to deterministic rules
+    use_llm = bool(os.getenv("GOOGLE_API_KEY"))
+    if use_llm:
+        print("  - Running LLM-based assessment (Gemini)...")
+        try:
+            llm = get_structured_llm(AssessmentOutput, model_name="gemini-1.5-flash", temperature=0.0)
+            response = llm.invoke(prompt)
+            assessment = response.parsed if hasattr(response, "parsed") else response
+
+            state.pattern = assessment.pattern
+            state.pattern_description = assessment.pattern_description
+            state.fraud_probability = assessment.fraud_probability
+            state.confidence = assessment.confidence
+            state.sufficient_evidence = assessment.sufficient_evidence
+            state.affected_txn_ids = assessment.affected_txn_ids or [state.flagged_txn_id]
+            state.first_suspicious_txn_id = assessment.first_suspicious_txn_id or ""
+            state.exposure_usd = assessment.exposure_usd
+
+            if state.fraud_probability > 0.75:
+                state.verdict = "fraud"
+            elif state.fraud_probability < 0.30:
+                state.verdict = "legitimate"
+            else:
+                state.verdict = "uncertain"
+
+            print(f"  ✓ LLM Assessment complete:")
+            print(f"    - Pattern: {state.pattern}")
+            print(f"    - Fraud probability: {state.fraud_probability:.2f}")
+            print(f"    - Confidence: {state.confidence:.2f}")
+            print(f"    - Verdict: {state.verdict}")
+
+            state.log_transition("assess_uncertainty", {
+                "fraud_probability": state.fraud_probability,
+                "confidence": state.confidence,
+                "pattern": state.pattern,
+                "sufficient_evidence": state.sufficient_evidence,
+                "llm_used": True
+            })
+            return state
+
+        except Exception as e:
+            print(f"  - LLM assessment failed ({e}), falling back to rules")
 
     # Deterministic rule-based assessment from graph evidence
     print("  - Running rule-based assessment...")

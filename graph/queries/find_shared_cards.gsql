@@ -1,7 +1,27 @@
-// GSQL query: Find shared card patterns (linked cards)
-// Phase 2: GSQL Tools
+CREATE QUERY find_shared_cards(STRING card_id) FOR GRAPH FraudInvestigation {
+  /*
+    Find cards linked to the target card via LINKED_CARD edges
+    (shared device, shared address, shared email domain).
+  */
+  TYPEDEF TUPLE<STRING linked_card_id, STRING link_type, FLOAT strength> LinkRow;
+  ListAccum<LinkRow> @@links;
 
-// TODO: CREATE QUERY find_shared_cards(...) {
-//   Returns: Card clusters based on shared attributes
-//   Pre-aggregated summary
-// }
+  card_v = {Card.*};
+  target = SELECT c FROM card_v:c WHERE c.card_id == card_id LIMIT 1;
+
+  linked = SELECT lc FROM target:c -(LINKED_CARD:e)- Card:lc
+           ORDER BY e.strength DESC
+           LIMIT 50;
+
+  FOREACH lc IN linked DO
+    @@links += LinkRow(lc.card_id, linked.e.link_type, linked.e.strength);
+  END;
+
+  // Cluster: cards reachable with 2 hops
+  cluster = SELECT lc2 FROM linked:lc -(LINKED_CARD:e2)- Card:lc2
+            WHERE lc2.card_id != card_id;
+
+  PRINT @@links AS linked_cards;
+  PRINT linked.size() + cluster.size() + 1 AS cluster_size;
+  PRINT card_id AS card_id;
+}

@@ -1,7 +1,64 @@
-// GSQL query: Get k-hop neighborhood of a transaction
-// Phase 2: GSQL Tools
+CREATE QUERY get_txn_neighborhood(STRING transaction_id, STRING card_id, STRING customer_id, INT hops = 2) FOR GRAPH FraudInvestigation {
+  /*
+    Returns k-hop neighborhood of a transaction:
+    the transaction itself, its card, customer, device,
+    recent sibling transactions on the same card, and risk signals.
+  */
+  TYPEDEF TUPLE<STRING txn_id, FLOAT amount, STRING ts, STRING channel,
+                STRING product_cd, FLOAT risk_score, FLOAT addr1, FLOAT addr2,
+                STRING p_email_domain> TxnRow;
 
-// TODO: CREATE QUERY get_txn_neighborhood(...) {
-//   Returns: Transaction, Card, Customer, Device, Address, EmailDomain
-//   Pre-aggregated summary, not raw rows
-// }
+  SumAccum<FLOAT>  @total_amt;
+  SumAccum<INT>    @txn_count;
+  MaxAccum<FLOAT>  @max_risk;
+  ListAccum<TxnRow> @@recent_txns;
+  ListAccum<STRING> @@risk_signals;
+
+  // Seed: the target transaction
+  seed = {Transaction.*};
+  target_txn = SELECT t FROM seed:t WHERE t.transaction_id == transaction_id LIMIT 1;
+
+  // Reach the card
+  card_v = SELECT c FROM target_txn:t -(MADE_BY:e)-> Card:c WHERE c.card_id == card_id LIMIT 1;
+
+  // Recent transactions on same card (last 30 days window via NEXT_TXN chain)
+  recent = SELECT r FROM card_v:c -(<MADE_BY:e)- Transaction:r
+           WHERE r.transaction_id != transaction_id
+           ORDER BY r.ts DESC
+           LIMIT 20;
+
+  FOREACH r IN recent DO
+    @@recent_txns += TxnRow(r.transaction_id, r.amount, (STRING)r.ts, r.channel,
+                            r.product_cd, r.risk_score, r.addr1, r.addr2, r.p_email_domain);
+    r.@total_amt += r.amount;
+    r.@txn_count += 1;
+    r.@max_risk += r.risk_score;
+  END;
+
+  // Device for target transaction
+  dev_v = SELECT d FROM target_txn:t -(USES_DEVICE:e)-> Device:d LIMIT 1;
+
+  // Customer
+  cust_v = SELECT cu FROM card_v:c -(OWNED_BY:e)-> Customer:cu LIMIT 1;
+
+  // Risk signals
+  FOREACH t IN target_txn DO
+    IF t.risk_score > 0.8 THEN @@risk_signals += "high_risk_score"; END;
+    IF t.channel == "online" THEN @@risk_signals += "online_channel"; END;
+    IF t.p_email_domain IN ("gmail.com","yahoo.com","hotmail.com") THEN
+      @@risk_signals += "generic_email_domain";
+    END;
+  END;
+
+  PRINT target_txn[target_txn.transaction_id, target_txn.amount,
+                   target_txn.ts, target_txn.channel, target_txn.product_cd,
+                   target_txn.risk_score, target_txn.addr1, target_txn.addr2,
+                   target_txn.p_email_domain] AS transaction;
+  PRINT card_v[card_v.card_id, card_v.customer_id, card_v.card_network,
+               card_v.card_type, card_v.created_at] AS card;
+  PRINT cust_v[cust_v.customer_id, cust_v.created_at] AS customer;
+  PRINT dev_v[dev_v.device_id, dev_v.device_type, dev_v.device_info,
+              dev_v.os, dev_v.browser] AS device;
+  PRINT @@recent_txns AS recent_transactions;
+  PRINT @@risk_signals AS risk_signals;
+}
