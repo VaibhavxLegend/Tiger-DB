@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TigerGraph Fraud Investigation Console</title>
+<style>
+:root{--bg:#0b0f14;--surface:#111620;--surface-2:#161b26;--border:#23293a;--text:#e8ecf1;--text-dim:#8a95a8;--accent:#f59e0b;--accent-2:#10b981;--red:#ef4444;--blue:#3b82f6;--shadow:0 20px 40px rgba(0,0,0,0.5);}
+*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+body{margin:0;background:var(--bg);color:var(--text);line-height:1.35;}
+.header{background:linear-gradient(135deg,#111620 0%,#0b0f14 100%);border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);}
+.header h2{margin:0;font-weight:800;letter-spacing:-0.02em;font-size:1.25rem;color:#fff;display:flex;align-items:center;gap:0.5rem;}
+.header .badge{background:rgba(245,158,11,0.15);color:var(--accent);padding:0.15rem 0.5rem;border-radius:999px;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;border:1px solid rgba(245,158,11,0.25);}
+.container{max-width:1400px;margin:2rem auto;padding:0 1.5rem;display:grid;grid-template-columns:320px 1fr;gap:1.5rem;}
+@media(max-width:1100px){.container{grid-template-columns:1fr;}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:1rem;padding:1.25rem;box-shadow:var(--shadow);transition:transform .12s ease,border-color .12s ease;}
+.card:hover{border-color:rgba(245,158,11,0.3);}
+.card h3{margin:0 0 0.75rem;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);font-weight:700;}
+.case-list{height:calc(100vh - 180px);overflow-y:auto;padding-right:0.25rem;}
+.case-list::-webkit-scrollbar{width:6px;}
+.case-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px;}
+.case-item{padding:0.85rem;border:1px solid var(--border);border-radius:0.6rem;margin-bottom:0.65rem;background:var(--surface-2);cursor:pointer;transition:.15s;position:relative;overflow:hidden;}
+.case-item::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);opacity:0;transition:.15s;}
+.case-item:hover{border-color:rgba(245,158,11,0.4);transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.3);}
+.case-item:hover::before{opacity:1;}
+.case-item.active{border-color:var(--accent);background:#181f2a;}
+.case-item.active::before{opacity:1;}
+.case-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem;}
+.case-id{font-weight:800;font-size:0.9rem;color:#fff;letter-spacing:-0.01em;}
+.case-meta{font-size:0.7rem;color:var(--text-dim);display:flex;gap:0.35rem;flex-wrap:wrap;}
+.badge{padding:0.15rem 0.45rem;border-radius:999px;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.02em;border:1px solid rgba(255,255,255,0.08);}
+.badge-fraud{background:rgba(239,68,68,0.12);color:#fca5a5;border-color:rgba(239,68,68,0.25);}
+.badge-legit{background:rgba(16,185,129,0.12);color:#6ee7b7;border-color:rgba(16,185,129,0.25);}
+.badge-uncertain{background:rgba(245,158,11,0.12);color:#fde68a;border-color:rgba(245,158,11,0.25);}
+.prob-bar{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--red),var(--accent));margin-top:0.35rem;opacity:0.7;}
+.case-detail h2{margin:0 0 0.25rem;font-size:1.4rem;font-weight:800;letter-spacing:-0.03em;color:#fff;display:flex;align-items:center;gap:0.5rem;}
+.case-detail .subtitle{color:var(--text-dim);font-size:0.85rem;margin-bottom:1rem;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem;margin-bottom:1rem;}
+.stat{background:var(--surface-2);padding:0.75rem;border-radius:0.6rem;border:1px solid var(--border);text-align:center;}
+.stat .label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);font-weight:700;margin-bottom:0.15rem;}
+.stat .value{font-size:1.1rem;font-weight:800;color:#fff;}
+.evidence-section{margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem;}
+.evidence-section h4{margin:0 0 0.5rem;font-size:0.8rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;font-weight:700;}
+.evidence-list{list-style:none;padding:0;margin:0;}
+.evidence-list li{padding:0.6rem 0;border-bottom:1px dashed var(--border);display:flex;gap:0.75rem;align-items:flex-start;font-size:0.85rem;}
+.evidence-list .source{font-family:monospace;font-size:0.7rem;color:var(--accent);background:rgba(245,158,11,0.08);padding:0.05rem 0.35rem;border-radius:4px;white-space:nowrap;margin-top:0.15rem;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(11,15,20,0.85);z-index:100;backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:2rem;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:1rem;padding:2rem;max-width:480px;width:100%;box-shadow:var(--shadow);animation:slideUp .2s ease-out;}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+.modal h3{margin:0 0 1rem;font-size:1.1rem;color:#fff;}
+.modal input{width:100%;padding:0.65rem 0.75rem;margin:0.35rem 0;border:1px solid var(--border);border-radius:0.5rem;background:var(--bg);color:var(--text);font-size:0.85rem;transition:border-color .15s;}
+.modal input:focus{outline:none;border-color:var(--accent);}
+.modal button{width:100%;padding:0.65rem;margin:0.35rem 0;border:none;border-radius:0.5rem;font-weight:700;cursor:pointer;transition:.15s;}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#d97706);color:#fff;}
+.btn-primary:hover{filter:brightness(1.1);}
+.btn-secondary{background:var(--surface-2);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{background:var(--border);}
+.summary-bar{display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;}
+.summary-bar .pill{background:var(--surface-2);border:1px solid var(--border);padding:0.35rem 0.75rem;border-radius:999px;font-size:0.8rem;font-weight:600;color:#fff;display:inline-flex;align-items:center;gap:0.35rem;}
+.tag{font-family:monospace;font-size:0.75rem;color:var(--text-dim);background:rgba(255,255,255,0.05);padding:0.15rem 0.4rem;border-radius:4px;border:1px solid var(--border);}
+</style>
+
+</head>
+<body>
+
+<div class="header">
+  <h2>🐅 TigerGraph Fraud Investigator <span class="badge">Regenerated 2026-09-24</span></h2>
+  <div style="display:flex;gap:0.5rem;align-items:center;">
+    <button onclick="openModal()" style="background:linear-gradient(135deg,var(--accent),#d97706);color:#fff;border:none;padding:0.5rem 1rem;border-radius:0.5rem;font-weight:700;cursor:pointer;">+ Trigger Case</button>
+    <button onclick="renderCases()" style="background:var(--surface-2);color:var(--text);border:1px solid var(--border);padding:0.5rem 0.75rem;border-radius:0.5rem;font-weight:700;cursor:pointer;">Refresh</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="card case-list" id="case-list">
+    <h3>Regenerated Cases (20/20)</h3>
+    <div id="cases-container"></div>
+  </div>
+
+  <div class="card case-detail" id="case-detail">
+    <h3>Case Details</h3>
+    <div id="detail-content">
+      <p style="color:var(--text-dim);font-size:0.9rem;">Select a case from the left to view evidence, probability, and recommendations.</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="trigger-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3>Trigger New Investigation</h3>
+    <input type="text" id="t-case" placeholder="Case ID (e.g. HHG-999)">
+    <input type="text" id="t-txn" placeholder="Transaction ID">
+    <input type="text" id="t-card" placeholder="Card ID">
+    <input type="text" id="t-cust" placeholder="Customer ID">
+    <input type="number" id="t-risk" placeholder="Risk Score (0.0-1.0)" step="0.01" min="0" max="1">
+    <button class="btn-primary" onclick="triggerCase()">Run Agent Workflow</button>
+    <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+
+<script>
+function openModal(){document.getElementById('trigger-modal').style.display='flex';}
+function closeModal(){document.getElementById('trigger-modal').style.display='none';}
+
+let selectedId = null;
+
+function verdictClass(v){if(v==='fraud')return 'badge-fraud';if(v==='legit')return 'badge-legit';return 'badge-uncertain';}
+
+function renderCases(){
+  const c = document.getElementById('cases-container');
+  c.innerHTML = '';
+  const ids = Object.keys(CASES).sort();
+  ids.forEach(id=>{
+    const d = CASES[id];
+    const div = document.createElement('div');
+    div.className = 'case-item' + (id===selectedId?' active':'');
+    div.onclick = ()=>selectCase(id);
+    div.innerHTML = `<div class="case-header"><span class="case-id">${d.id}</span><span class="badge ${verdictClass(d.verdict)}">${d.verdict}</span></div>
+      <div class="case-meta"><span>txn ${d.txn||'—'}</span> • <span>${d.pattern||'none'}</span> • <span>${d.prob*100|0}%</span></div>
+      <div class="prob-bar" style="width:${d.prob*100}%;"></div>`;
+    c.appendChild(div);
+  });
+}
+
+function selectCase(id){
+  selectedId = id;
+  renderCases();
+  const d = CASES[id];
+  const detail = document.getElementById('detail-content');
+  const cardsHtml = (d.cards||[]).map(c=>`<span class="tag">${c}</span>`).join('');
+  detail.innerHTML = `<h2>${d.id} <span class="badge ${verdictClass(d.verdict)}">${d.verdict}</span></h2>
+    <div class="subtitle">Pattern: <strong>${d.pattern||'none'}</strong> • Probability: <strong style="color:${d.prob>0.8?'#ef4444':'#f59e0b'}">${(d.prob*100).toFixed(0)}%</strong> • Evidence: ${d.evidence_count} • Latency: ${d.latency}</div>
+
+    <div class="summary-bar">
+      <div class="pill"><strong>Status:</strong> ${d.status}</div>
+      <div class="pill"><strong>Pattern:</strong> ${d.pattern||'none'}</div>
+      <div class="pill"><strong>Latency:</strong> ${d.latency}</div>
+    </div>
+
+    <div class="grid-3">
+      <div class="stat"><div class="label">Fraud Prob</div><div class="value" style="color:${d.prob>0.8?'#ef4444':'#f59e0b'}">${(d.prob*100).toFixed(0)}%</div></div>
+      <div class="stat"><div class="label">Evidence</div><div class="value">${d.evidence_count}</div></div>
+      <div class="stat"><div class="label">Cards</div><div class="value">${(d.cards||[]).length}</div></div>
+    </div>
+
+    <div class="evidence-section">
+      <h4>Evidence</h4>
+      <ul class="evidence-list">
+        <li><span>Transaction <strong>${d.txn||'—'}</strong> flagged with risk score.</span><span class="source">graph</span></li>
+        <li><span>Risk signals detected via neighborhood query.</span><span class="source">query:get_txn_neighborhood</span></li>
+        ${cardsHtml?`<li><span>Connected cards: ${cardsHtml}</span></li>`:''}
+      </ul>
+    </div>
+    <div style="margin-top:0.75rem;color:var(--text-dim);font-size:0.75rem;">Regenerated by benchmark engine (gemini-1.5-flash endpoint).</div>`;
+}
+
+function triggerCase(){
+  const cid = document.getElementById('t-case').value||'HHG-XXX';
+  alert('Trigger executed for case '+cid+'. (Agent workflow would call agent/graph.build_investigation_graph.)');
+  closeModal();
+}
+
+window.addEventListener('load', renderCases);
+</script>
+</body>
+</html>

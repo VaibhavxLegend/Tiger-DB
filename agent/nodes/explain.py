@@ -84,95 +84,26 @@ IMPORTANT:
 - All explanations must cite evidence refs (e.g., 'Evidence #1', 'query:get_txn_neighborhood')
 - Action justification must reference policy rules"""
 
-    # Try LLM-based explanation first, fall back to template-based approach
-    use_llm = bool(os.getenv("GOOGLE_API_KEY")) and state.final_actions
-    if use_llm:
-        print("  - Running LLM-based explanation (Gemini)...")
-        try:
-            llm = get_structured_llm(ExplanationOutput, model_name="gemini-1.5-flash", temperature=0.0)
-            response = llm.invoke(prompt)
-            explanation = response.parsed if hasattr(response, "parsed") else response
+    print("  - Running LLM-based explanation (Gemini)...")
+    llm = get_structured_llm(ExplanationOutput, model_name="gemini-1.5-flash", temperature=0.0)
+    response = llm.invoke(prompt)
+    explanation = response.parsed if hasattr(response, "parsed") else response
 
-            state.explanation_summary = explanation.summary
-            state.sar_narrative = explanation.sar_narrative
-            state.sar_subjects = explanation.sar_subjects
-            state.evidence_explanation = explanation.evidence_explanation
-            state.uncertainty_explanation = explanation.uncertainty_explanation
-            state.action_justification = explanation.action_justification
+    state.explanation_summary = explanation.summary
+    state.sar_narrative = explanation.sar_narrative
+    state.sar_subjects = explanation.sar_subjects
+    state.evidence_explanation = explanation.evidence_explanation
+    state.uncertainty_explanation = explanation.uncertainty_explanation
+    state.action_justification = explanation.action_justification
 
-            print(f"  ✓ LLM Explanation generated:")
-            print(f"    - Summary: {state.explanation_summary[:100]}...")
-            print(f"    - SAR required: {bool(state.sar_narrative)}")
-
-            state.log_transition("explain", {
-                "explanation_generated": True,
-                "sar_required": bool(state.sar_narrative),
-                "summary_length": len(state.explanation_summary),
-                "llm_used": True
-            })
-            return state
-
-        except Exception as e:
-            print(f"  - LLM explanation failed ({e}), falling back to template")
-
-    # Template-based explanation (fallback)
-    print("  - Generating rule-based explanation...")
-
-    pattern = state.pattern or "none"
-    verdict = state.verdict or "uncertain"
-    prob = state.fraud_probability or 0.5
-    ev_refs = ", ".join([f"Evidence #{i+1}" for i in range(min(len(state.evidence), 4))])
-    actions_text = ", ".join([a.action for a in state.final_actions]) if state.final_actions else "no actions"
-    action_names = [a.get("action", "") if isinstance(a, dict) else a.action for a in state.final_actions] if state.final_actions else []
-
-    state.explanation_summary = (
-        f"Case {state.case_id} investigated for {pattern.replace('_', ' ')} pattern. "
-        f"Fraud probability assessed at {prob:.0%} with verdict: {verdict}. "
-        f"Graph traversal identified {len(state.evidence)} evidence items ({ev_refs}). "
-        f"Recommended actions: {actions_text}."
-    )
-
-    state.evidence_explanation = (
-        f"Graph queries (get_txn_neighborhood, find_shared_devices, velocity_check) returned "
-        f"{len(state.evidence)} signals. Risk score was {state.risk_score:.2f}. "
-        f"Pattern match: {pattern}."
-    )
-
-    state.uncertainty_explanation = (
-        "" if verdict == "fraud" else
-        f"Confidence was {state.confidence:.0%}. Additional evidence was requested to resolve ambiguity."
-    )
-
-    state.action_justification = (
-        f"Actions {action_names} selected per policy rules: "
-        f"R1 (verify before block on weak signal) and R4 (monitor while awaiting verification)."
-    )
-
-    # SAR only for confirmed fraud with high exposure
-    file_sar = verdict == "fraud" and state.exposure_usd >= 5000
-    if file_sar:
-        state.sar_narrative = (
-            f"Suspicious Activity Report: Case {state.case_id}. "
-            f"Card {state.card_id} belonging to customer {state.customer_id} exhibited "
-            f"{pattern.replace('_', ' ')} behavior. "
-            f"Flagged transaction {state.flagged_txn_id} triggered investigation. "
-            f"Total exposure: ${state.exposure_usd:,.2f}. "
-            f"Evidence: {ev_refs}. "
-            f"Fraud probability: {prob:.0%}. Actions taken: {actions_text}."
-        )
-        state.sar_subjects = [state.customer_id]
-    else:
-        state.sar_narrative = ""
-        state.sar_subjects = []
-
-    print(f"  ✓ Explanation generated:")
+    print(f"  ✓ LLM Explanation generated:")
     print(f"    - Summary: {state.explanation_summary[:100]}...")
-    print(f"    - SAR required: {file_sar}")
-    
+    print(f"    - SAR required: {bool(state.sar_narrative)}")
+
     state.log_transition("explain", {
         "explanation_generated": True,
-        "sar_required": bool(getattr(state, 'sar_narrative', '')),
-        "summary_length": len(getattr(state, 'explanation_summary', ''))
+        "sar_required": bool(state.sar_narrative),
+        "summary_length": len(state.explanation_summary),
+        "llm_used": True
     })
-    
     return state

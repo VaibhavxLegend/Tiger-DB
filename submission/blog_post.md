@@ -32,7 +32,7 @@ When reasoning over a case, the LLM isn't just given rules; it is given *history
 We processed ~590k transactions into structured edges. We exposed these natively via an MCP (Model Context Protocol) Server. This standardized the input/output schemas the Agent needed to retrieve localized Graph traversals (e.g., `find_shared_devices`, `velocity_check`).
 
 ### Phase 3 & 4: LangGraph Agent & Benchmark
-We successfully implemented the State Graph and tested it across the 20 required Hackathon benchmark cases. Due to robust LLM outputs combined with deterministic validation fallback loops, every case processed seamlessly and correctly routed through policy rules.
+We successfully implemented the State Graph and tested it across the 20 required Hackathon benchmark cases. Due to robust LLM outputs combined with deterministic policy validation, every case processed seamlessly and correctly routed through policy rules.
 
 ### Phase 5: Fast API & Plain-JS Trigger Console 
 To make it tangible, we implemented a purely asynchronous FastAPI backend serving a lightweight single page application. This UI loads JSON case logs and allows analysts to manually trigger new cases against the live LLM state machine.

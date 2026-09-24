@@ -17,7 +17,7 @@
     "exposure_usd": 0.0,
     "evidence": [
       {
-        "claim": "Transaction $457.83 via online, risk score 0.79",
+        "claim": "Transaction $31.96 via online, risk score 0.79",
         "source": "graph",
         "ref": "query:get_txn_neighborhood",
         "entity_ids": [
@@ -99,5 +99,5 @@
   "stop_reason": "",
   "tool_calls": 3,
   "tokens": 0,
-  "latency_s": 0.0011439323425292969
+  "latency_s": 1.4676389694213867
 }

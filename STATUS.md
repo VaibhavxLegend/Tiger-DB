@@ -180,7 +180,7 @@ Phase 1 (Graph) → Phase 2 (Tools) → Phase 3 (Agent) → Phase 4 (Benchmark)
 | Risk | Mitigation | Status |
 |------|-----------|--------|
 | GSQL list-splitting breaks | Pre-process in pandas first | ✅ Planned |
-| LLM returns malformed JSON | Structured output + retry + fallback | ✅ Specified |
+| LLM returns malformed JSON | Structured output + retry | ✅ Specified |
 | Evidence loop doesn't terminate | Hard iteration cap (3) | ✅ Specified |
 | Running out of time for UI | Fallback: single case-detail page | ⏳ Monitored |
 | Benchmark answer format misread | Re-verified in Phase 0 | ✅ Confirmed |

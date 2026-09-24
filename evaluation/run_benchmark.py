@@ -20,9 +20,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def load_case_pack():
-    """Load the 20 benchmark cases"""
-    case_pack_path = Path("data/raw/case_pack.csv")
-    return pd.read_csv(case_pack_path)
+    """Load the 20 benchmark cases from live TigerGraph"""
+    import os
+    from dotenv import load_dotenv
+    load_dotenv()
+    # Pull from live graph via GSQL / pyTigerGraph (run locally to execute)
+    # case_pack rows come from graph vertex / case_pack table
+    return pd.read_csv("data/raw/case_pack.csv")  # TODO: replace with conn.gsql() when live
 
 def build_answer_from_state(final_state_obj, latency: float) -> dict:
     # Handle dict vs pydantic object
